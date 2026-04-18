@@ -1,0 +1,22 @@
+# 忽略所有node_modules文件夹
+/node_modules/
+
+# 忽略构建后的dist文件夹
+/dist/
+/build/
+
+# 忽略其他不必要文件
+.DS_Store
+Thumbs.db
+
+# 忽略特定目录
+/.idea/
+/.vscode/
+
+# python编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C扩展
+*.so
