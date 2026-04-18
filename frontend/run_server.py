@@ -8,6 +8,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
     extensions_map = {
         '.js': 'application/javascript', # 核心修复：告诉浏览器这是 JS
         '.mjs': 'application/javascript',
+        '.html': 'text/html',
         '.css': 'text/css',
         '.wasm': 'application/wasm',
         '': 'application/octet-stream',   # 默认类型
