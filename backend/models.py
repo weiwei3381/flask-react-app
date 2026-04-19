@@ -30,6 +30,7 @@ class Document(BaseModel):
     Args:
         BaseModel (_type_): 模型基类
     """
+    id = IntegerField(primary_key=True) # 文档ID，自增主键
     title = CharField(max_length=255)
     filepath = CharField(max_length=255, null=True) # 可选，文档原始文件路径
     author = CharField(max_length=255, null=True)   # 可选，作者信息
@@ -59,6 +60,7 @@ class Paragraph(BaseModel):
 
 class Structure(BaseModel):
     """标题观点表"""
+    id=IntegerField(primary_key=True) # 结构ID，自增主键
     document = ForeignKeyField(Document, backref='structures', on_delete='CASCADE')
     paragraph = ForeignKeyField(Paragraph, backref='structures', on_delete='CASCADE')
     order = IntegerField() # 序号
