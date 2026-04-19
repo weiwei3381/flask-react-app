@@ -8,11 +8,12 @@ import {
   FileTwoTone,
   FileWordTwoTone,
 } from '@ant-design/icons'
-import { Input, message, Rate, Space, Spin, Table, Tooltip } from 'antd'
+import { Input, message, Modal, Rate, Space, Spin, Table, Tooltip } from 'antd'
 import type { GetProps } from 'antd'
 import SentenceHighlight from '../../components/SentenceHighlight'
 import type { ResponseData } from '../../../utils'
 import { fetchUrl } from '../../../utils/network'
+import DetailModal from '../../components/DetailModal'
 
 type SearchProps = GetProps<typeof Input.Search>
 const { Search } = Input
@@ -28,7 +29,7 @@ const DocumentsPage: React.FC = () => {
   const [searchResult, setSearchResult] = useState([]) // 搜索结果
   const [total, setTotal] = useState(0) // 结果总数
   const [modalVisible, setModalVisible] = useState(false) // 模态框可见性
-  const [modaLoading, setModalLoading] = useState(true) // 模态框是否显示加载中
+  const [modalLoading, setModalLoading] = useState(true) // 模态框是否显示加载中
   const [selectParaId, setSelectParaId] = useState(null) // 双击的标题首段id
   const [tableLoading, setTableLoading] = useState(false) // 是否显示正在加载
 
@@ -244,27 +245,28 @@ const DocumentsPage: React.FC = () => {
       <Spin description="正在检索" spinning={tableLoading}>
         <Table
           // 双击打开详情模态框
-          //   onRow={(record) => {
-          //     return {
-          //       onDoubleClick: async () => {
-          //         setModalVisible(true);
-          //         setModalLoading(true);
-          //         let firstPara: Paragraph = null; // 首段
-          //         // 如果文档比较短，则一次性拿到所有段落，拿过之后就存入cache中了，方便下次读取
-          //         if (record.paraLength < 200) {
-          //           const allParas = await getAllParasByDocumentId(record.id);
-          //           if (allParas && allParas.length > 0) {
-          //             firstPara = allParas[0];
-          //           }
-          //         } else {
-          //           // 获得文档的首段
-          //           firstPara = await getOneParaInDocument(record.id);
-          //         }
+          onRow={(record) => {
+            return {
+              onDoubleClick: async () => {
+                console.log(record)
+                setModalVisible(true)
+                setModalLoading(true)
+                //   let firstPara: Paragraph = null; // 首段
+                //   // 如果文档比较短，则一次性拿到所有段落，拿过之后就存入cache中了，方便下次读取
+                //   if (record.paraLength < 200) {
+                //     const allParas = await getAllParasByDocumentId(record.id);
+                //     if (allParas && allParas.length > 0) {
+                //       firstPara = allParas[0];
+                //     }
+                //   } else {
+                //     // 获得文档的首段
+                //     firstPara = await getOneParaInDocument(record.id);
+                //   }
 
-          //         setSelectParaId(firstPara.id);
-          //       },
-          //     };
-          //   }}
+                setSelectParaId(record.id)
+              },
+            }
+          }}
           // 分页情况
           pagination={{
             defaultCurrent: 1,
@@ -285,6 +287,18 @@ const DocumentsPage: React.FC = () => {
           dataSource={searchResult}
         />
       </Spin>
+      <DetailModal
+        isModalVisible={modalVisible} // modal显示情况
+        isModalLoading={modalLoading} // 是否模态框显示加载中
+        isSentenceHighlight={false} // 不显示高亮句子
+        closeModal={() => {
+          setModalVisible(false) // 关闭模态框的函数
+          setSelectParaId(null) // 清空选中的段落ID
+          setModalLoading(false)
+        }}
+        searchValue={searchValue}
+        paraId={selectParaId}
+      />
     </>
   )
 }

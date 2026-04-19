@@ -68,14 +68,18 @@ def get_fulltext_by_documentId(document_id: int) -> list:
     if document_id in fulltext_cache:
         print(f"文档ID {document_id} 的全文缓存命中")
         return fulltext_cache[document_id]
-    
+
     # 缓存没命中则正常搜索
     # 如果段落数量小于50，则返回所有段落，否则只返回前10段
     if document.paraLength < 50:
         paragraphs = Paragraph.select().where(Paragraph.document == document_id).order_by(Paragraph.order)
         cache["document_fulltext"][document_id] = [model_to_dict(para,recurse=False) for para in paragraphs]
     else:
-        paragraphs = Paragraph.select().where((Paragraph.document == document_id) & (Paragraph.order < 10)).order_by(Paragraph.order)
+        paragraphs = (
+            Paragraph.select()
+            .where((Paragraph.document == document_id) & (Paragraph.order < 50))
+            .order_by(Paragraph.order)
+        )
     results = [model_to_dict(para,recurse=False) for para in paragraphs]
     fulltext_cache[document_id] = results
     return results

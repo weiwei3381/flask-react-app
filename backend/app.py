@@ -41,7 +41,7 @@ def query_in_document():
         "message": "获取成功",
         "data": documents
     })
-    
+
     title_query = data.get('title', '')  # 拿到标题的检索词
     pageNo = data.get('pageNo', 1)  # 页码，默认为1
     pageSize = data.get('pageSize', 10)  # 每页大小，默认为10
@@ -52,7 +52,8 @@ def query_in_document():
         "data": documents
     })
 
-@app.route('/api/document/fulltext', methods=['POST'])
+
+@app.route("/api/v1/document/fulltext", methods=["POST"])
 def get_document_fulltext():
     """根据文档ID查询对应的段落全文
     
@@ -64,9 +65,10 @@ def get_document_fulltext():
     if not document_id:
         return jsonify({'error': 'Missing documentId'}), 400
     fulltext = get_fulltext_by_documentId(document_id)
-    return jsonify(fulltext)
+    return jsonify({"status": 200, "message": "获取成功", "data": fulltext})
 
-@app.route('/api/structure/query', methods=['POST'])
+
+@app.route("/api/v1/structure/query", methods=["POST"])
 def query_in_structure():
     """进行结构检索，主要是标题和观点
 

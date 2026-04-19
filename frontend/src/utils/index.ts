@@ -17,6 +17,9 @@ export interface TagResult {
   tag: string;
 };
 
+// 大纲类型
+export type OutlineType = { title: string; paraId: number };
+
 /**
  * 后端返回值类型
  */
