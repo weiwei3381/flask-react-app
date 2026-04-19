@@ -32,8 +32,6 @@ const DocumentsPage: React.FC = () => {
   const [selectParaId, setSelectParaId] = useState(null) // 双击的标题首段id
   const [tableLoading, setTableLoading] = useState(false) // 是否显示正在加载
 
-  const handleSearch = async () => {}
-
   // 处理分页变换
   const handlePaginationChange = (current, pageSize) => {
     setPageOption({
@@ -42,6 +40,23 @@ const DocumentsPage: React.FC = () => {
     })
   }
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const res = await fetchUrl(
+        'http://127.0.0.1:5000/api/v1/document/query',
+        {
+          title: searchValue,
+          pageNo: pageOption.pageNo,
+          pageSize: pageOption.pageSize,
+        }
+      )
+      setSearchResult(res.data?.rows)
+    }
+
+    fetchData()
+  }, [pageOption])
+
+  // 搜索词变化则重新进行检索
   useEffect(() => {
     const fetchData = async () => {
       const res = await fetchUrl(
@@ -155,6 +170,9 @@ const DocumentsPage: React.FC = () => {
       ellipsis: false,
       width: '10%',
       sorter: true,
+      render: (text) => {
+        return `${text.slice(0, 10)}`
+      },
     },
     {
       title: '收藏',
@@ -213,6 +231,7 @@ const DocumentsPage: React.FC = () => {
           allowClear
           enterButton
           onSearch={() => {
+            setPageOption(defaultPageOption) // 搜索词变化时重置页码
             setSearchValue(inputValue)
           }}
           value={inputValue}
