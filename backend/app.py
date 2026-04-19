@@ -9,7 +9,7 @@ CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173','http://loca
 def index():
     return "后端服务正在运行..."
 
-@app.route('/api/greet', methods=['POST'])
+@app.route('/api/v1/greet', methods=['POST'])
 def greet():
     # 获取前端发送的 JSON 数据
     data = request.get_json()
@@ -20,7 +20,7 @@ def greet():
     
     return jsonify({'message': message})
 
-@app.route('/api/document/query', methods=['POST'])
+@app.route('/api/v1/document/query', methods=['POST'])
 def query_in_document():
     """进行文档检索
 
@@ -36,13 +36,21 @@ def query_in_document():
     print(f"接收到的数据: {data}")
     if not data:
         documents = search_documents_by_title("")
-        return jsonify(documents)
+        return jsonify({
+        "status": 200,
+        "message": "获取成功",
+        "data": documents
+    })
     
     title_query = data.get('title', '')  # 拿到标题的检索词
     pageNo = data.get('pageNo', 1)  # 页码，默认为1
     pageSize = data.get('pageSize', 10)  # 每页大小，默认为10
     documents = search_documents_by_title(title_query, pageNo, pageSize)
-    return jsonify(documents)
+    return jsonify({
+        "status": 200,
+        "message": "获取成功",
+        "data": documents
+    })
 
 @app.route('/api/document/fulltext', methods=['POST'])
 def get_document_fulltext():

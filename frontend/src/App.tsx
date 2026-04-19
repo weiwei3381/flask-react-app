@@ -1,52 +1,108 @@
-import { useState } from 'react'
-import { Button, DatePicker, Input } from 'antd';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useState } from 'react'
+import {
+  FileOutlined,
+  FileSearchOutlined,
+  PieChartOutlined,
+  ProfileOutlined,
+  ReadOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
+import type { MenuProps } from 'antd'
+import { Breadcrumb, Layout, Menu, theme } from 'antd'
+import './App.css'
+import DocumentsPage from './renderer/pages/documentsPage'
 
-function App() {
-  const [name, setName] = useState('')
-  const [message, setMessage] = useState('')
+const { Header, Content, Footer, Sider } = Layout
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      // 发送 POST 请求到 Flask 后端
-      const response = await fetch('http://127.0.0.1:5000/api/greet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name: name }),
-      })
+const siderStyle: React.CSSProperties = {
+  overflow: 'auto',
+  height: '100vh',
+  position: 'sticky',
+  insetInlineStart: 0,
+  top: 0,
+  scrollbarWidth: 'thin',
+  scrollbarGutter: 'stable',
+}
 
-      const data = await response.json()
-      setMessage(data.message)
-    } catch (error) {
-      console.error('请求出错:', error)
-      setMessage('连接后端失败，请检查后端是否启动。')
-    }
-  }
+type MenuItem = Required<MenuProps>['items'][number]
+
+function getItem(
+  label: React.ReactNode,
+  key: React.Key,
+  icon?: React.ReactNode,
+  children?: MenuItem[]
+): MenuItem {
+  return {
+    key,
+    icon,
+    children,
+    label,
+  } as MenuItem
+}
+
+const items: MenuItem[] = [
+  getItem('欢迎', '欢迎', <PieChartOutlined />),
+  getItem('全文检索', '全文检索', <ReadOutlined />),
+  getItem('结构搜索', '结构搜索', <ProfileOutlined />),
+  getItem('文档检索', '文档检索', <FileSearchOutlined />),
+  getItem('User', 'sub1', <UserOutlined />, [
+    getItem('Tom', '15'),
+    getItem('Bill', '16'),
+    getItem('Alex', '17'),
+  ]),
+  getItem('Team', 'sub2', <TeamOutlined />, [
+    getItem('Team 1', '28'),
+    getItem('Team 2', '29'),
+  ]),
+  getItem('Files', '30', <FileOutlined />),
+]
+
+const App: React.FC = () => {
+  const [selectedMenuKey, setSelectedMenuKey] = useState('文档检索')
+  const [collapsed, setCollapsed] = useState(false)
+  const {
+    token: { colorBgContainer, borderRadiusLG },
+  } = theme.useToken()
 
   return (
-    <div
-      style={{ textAlign: 'center', marginTop: '50px', fontFamily: 'Arial' }}
-    >
-      <h1>React + Flask 示例</h1>
-        <DatePicker />
+    <Layout hasSider>
+      <Sider
+        style={siderStyle}
+        collapsible
+        collapsed={collapsed}
+        onCollapse={(value) => setCollapsed(value)}
+      >
+        <div className="demo-logo-vertical">多粒度检索系统</div>
+        <Menu
+          theme="dark"
+          defaultSelectedKeys={['欢迎']}
+          mode="inline"
+          items={items}
+          onSelect={(info) => {
+            setSelectedMenuKey(info.key)
+            console.log(info)
+          }}
+        />
+      </Sider>
 
-        <Input type="text"
-          placeholder="请输入你的名字"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{ width: '20vw' }} />
-        <Button onClick={handleSubmit} style={{ padding: '10px 20px' }}>
-          发送问候
-        </Button>
-
-      {message && (
-        <div style={{ marginTop: '20px', color: 'green', fontSize: '1.2em' }}>
-          <p>{message}</p>
-        </div>
-      )}
-    </div>
+      <Layout>
+        <Content
+          style={{
+            margin: '12px 10px 0',
+            overflow: 'initial',
+            background: colorBgContainer,
+            borderRadius: borderRadiusLG,
+          }}
+        >
+          {selectedMenuKey == '文档检索' && <DocumentsPage />}
+        </Content>
+        <Footer style={{ textAlign: 'center', padding:"10px" }}>
+          多粒度文档检索系统 ©{new Date().getFullYear()} Created by 大熊
+        </Footer>
+      </Layout>
+    </Layout>
   )
 }
 

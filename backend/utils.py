@@ -31,21 +31,24 @@ def search_documents_by_title(query: str, pageNo=1, pageSize=10) -> list:
     # 如果没有提供检索词，返回前10条文档
     if query is None or query.strip() == '':
         results = Document.select().order_by(Document.id).paginate(pageNo, pageSize)
-        return [model_to_dict(doc) for doc in results]
+        results_count = Document.select().count()
+        return {"count": results_count, "rows": [model_to_dict(doc) for doc in results]}
     query = query.strip()
-    
+
     # 如果检索词中没有空格，进行直接进行标题搜索
     if " " not in query:
         results = Document.select().where(Document.title.contains(query)).order_by(Document.date.desc()).paginate(pageNo, pageSize)
-        return [model_to_dict(doc) for doc in results]
-    
+        results_count = Document.select().where(Document.title.contains(query)).count()
+        return {"count": results_count, "rows": [model_to_dict(doc) for doc in results]}
+
     # 多个检索词，进行交集查询
     query_words = query.split()  # 获得多个检索词
     split_query= Document.select()
     for word in query_words:
         split_query = split_query.where(Document.title.contains(word))
     results = split_query.order_by(Document.date.desc()).paginate(pageNo, pageSize)
-    return [model_to_dict(doc) for doc in results]
+    results_count = split_query.count()
+    return {"count": results_count, "rows": [model_to_dict(doc) for doc in results]}
 
 
 def get_fulltext_by_documentId(document_id: int) -> list:
