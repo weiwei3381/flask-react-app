@@ -99,14 +99,38 @@ def search_structure_by_title(query: str, maxTitleLevel=9, pageNo=1, pageSize=10
     # 如果没有提供检索词，返回前10条文档
     if query is None or query.strip() == '':
         structures = Structure.select().order_by(Structure.id).paginate(pageNo, pageSize)
-        return [model_to_dict(struct) for struct in structures]
-    
-    
+        results_count = Structure.select().count()
+        rows = []
+        for struct in structures:
+            row = model_to_dict(struct, recurse=False)
+            row["documentName"] = struct.document.title
+            rows.append(row)
+        return {
+            "count": results_count,
+            "rows": rows,
+        }
+
     query = query.strip()
     # 如果检索词中没有空格，进行直接进行标题搜索
     if " " not in query:
         structures = Structure.select().where((Structure.title.contains(query)) & (Structure.titleLevel <= maxTitleLevel)).order_by(Structure.id).paginate(pageNo, pageSize)
-        return [model_to_dict(struct, recurse=False) for struct in structures]
+        results_count = (
+            Structure.select()
+            .where(
+                (Structure.title.contains(query))
+                & (Structure.titleLevel <= maxTitleLevel)
+            )
+            .count()
+        )
+        rows = []
+        for struct in structures:
+            row = model_to_dict(struct, recurse=False)
+            row["documentName"] = struct.document.title
+            rows.append(row)
+        return {
+            "count": results_count,
+            "rows": rows,
+        }
 
     # 多个检索词，进行交集查询
     query_words = query.split()  # 获得多个检索词
@@ -114,4 +138,13 @@ def search_structure_by_title(query: str, maxTitleLevel=9, pageNo=1, pageSize=10
     for word in query_words:
         split_query = split_query.where(Structure.title.contains(word))
     results = split_query.order_by(Structure.id).paginate(pageNo, pageSize)
-    return [model_to_dict(struct) for struct in results]
+    results_count = split_query.count()
+    rows = []
+    for struct in results:
+        row = model_to_dict(struct, recurse=False)
+        row["documentName"] = struct.document.title
+        rows.append(row)
+    return {
+        "count": results_count,
+        "rows": rows,
+    }

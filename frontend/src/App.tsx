@@ -13,6 +13,7 @@ import type { MenuProps } from 'antd'
 import { Breadcrumb, Layout, Menu, theme } from 'antd'
 import './App.css'
 import DocumentsPage from './renderer/pages/documentPage'
+import StructurePage from './renderer/pages/structurePage'
 
 const { Header, Content, Footer, Sider } = Layout
 
@@ -97,7 +98,7 @@ const App: React.FC = () => {
           }}
         >
           {selectedMenuKey == '文档检索' && <DocumentsPage />}
-          {selectedMenuKey == '结构搜索' && <DocumentsPage />}
+          {selectedMenuKey == '结构搜索' && <StructurePage />}
         </Content>
         <Footer style={{ textAlign: 'center', padding: '10px' }}>
           多粒度文档检索系统 ©{new Date().getFullYear()} Created by 大熊

@@ -29,6 +29,20 @@ export interface ResponseData {
   data: any
 }
 
+// 结构搜索结果的接口
+export interface StructureResult {
+    id: number;
+    documentId: number;
+    documentName: string;
+    date: string;
+    order: number;
+    paraId: number;
+    title: string;
+    titleLevel: number;
+    content: string;
+    filepath: string | null; // 文件路径
+  }
+
 // 句子中匹配的类型
 type Match = {
   sentence: string; // 词语组成的句子, 例如"安全形势分析"
@@ -430,8 +444,12 @@ export function unique(arr: any[]) {
 }
 
 export function convertDocTitle(title: string): string {
-  const docTitle = title.replaceAll(/[《》]/g, '');
-  return `《${docTitle}》`;
+  if(title){
+    const docTitle = title.replaceAll(/[《》]/g, '');
+    return `《${docTitle}》`;
+  }
+  return ""
+  
 }
 
 /**
