@@ -61,7 +61,7 @@ const items: MenuItem[] = [
 ]
 
 const App: React.FC = () => {
-  const [selectedMenuKey, setSelectedMenuKey] = useState('文档检索')
+  const [selectedMenuKey, setSelectedMenuKey] = useState('结构搜索')
   const [collapsed, setCollapsed] = useState(false)
   const {
     token: { colorBgContainer, borderRadiusLG },

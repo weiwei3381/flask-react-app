@@ -9,10 +9,14 @@ import {
   FileWordTwoTone,
 } from '@ant-design/icons'
 import {
+  Affix,
+  Col,
   Input,
   message,
   Modal,
   Rate,
+  Row,
+  Select,
   Space,
   Spin,
   Table,
@@ -22,6 +26,7 @@ import {
 import type { GetProps } from 'antd'
 import SentenceHighlight from '../../components/SentenceHighlight'
 import {
+  backToTop,
   convertDocTitle,
   unique,
   type ResponseData,
@@ -30,6 +35,7 @@ import {
 import { fetchUrl } from '../../../utils/network'
 import DetailModal from '../../components/DetailModal'
 import ColorDiv from '../../components/colorDiv'
+import './index.css'
 
 type SearchProps = GetProps<typeof Input.Search>
 const { Search } = Input
@@ -49,6 +55,15 @@ const StructurePage: React.FC = () => {
   const [selectParaId, setSelectParaId] = useState(null) // 双击的标题首段id
   const [tableLoading, setTableLoading] = useState(false) // 是否显示正在加载
 
+  // 普通搜索的条件
+  const [searchCondition, setSearchCondition] = useState<{
+    isIncludeHigherTitle: 'yes' | 'no'
+    titleLevel: number
+  }>({
+    isIncludeHigherTitle: 'no', // 是否包括上级标题
+    titleLevel: null, // 搜索标题级别，1,2,3，4分别是一级、二级、三级和四级标题，9是观点，-1是所有的标题
+  })
+
   // 处理分页变换
   const handlePaginationChange = (current, pageSize) => {
     setPageOption({
@@ -60,14 +75,11 @@ const StructurePage: React.FC = () => {
   // 搜索词或者页面变化则重新进行检索
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetchUrl(
-        'http://127.0.0.1:5000/api/v1/structure/query',
-        {
-          title: searchValue,
-          pageNo: pageOption.pageNo,
-          pageSize: pageOption.pageSize,
-        }
-      )
+      const res = await fetchUrl('/api/v1/structure/query', {
+        title: searchValue,
+        pageNo: pageOption.pageNo,
+        pageSize: pageOption.pageSize,
+      })
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)
     }
@@ -185,27 +197,110 @@ const StructurePage: React.FC = () => {
     },
   ]
 
+  const { Option } = Select
   return (
-    <>
-      <Space.Compact>
-        <Space.Addon>结构检索</Space.Addon>
-        <Search
-          placeholder="请输入关键词"
-          allowClear
-          enterButton
-          onSearch={() => {
-            setPageOption(defaultPageOption) // 搜索词变化时重置页码
-            setSearchValue(inputValue)
+    <div className="structure">
+      <Affix offsetTop={0}>
+        <Row
+          justify="center"
+          align="middle"
+          style={{
+            background: '#f0f2f5',
           }}
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e?.target?.value)
-            console.log(inputValue)
-          }}
-        />
-      </Space.Compact>
+        >
+          <Col span={11}>
+            <Space.Compact>
+              <Space.Addon>结构检索</Space.Addon>
+              <Search
+                placeholder="请输入关键词"
+                allowClear
+                enterButton
+                onSearch={() => {
+                  setPageOption(defaultPageOption) // 搜索词变化时重置页码
+                  setSearchValue(inputValue)
+                }}
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e?.target?.value)
+                  console.log(inputValue)
+                }}
+              />
+            </Space.Compact>
+          </Col>
+          <Col span={5} style={{ textAlign: 'center' }}>
+            <span style={{ fontSize: '16px' }}>标题级别：</span>
+            <Select
+              style={{
+                width: 'calc(100% - 80px)',
+                minWidth: '70px',
+                maxWidth: '120px',
+              }}
+              placeholder="级别"
+              allowClear
+              onChange={(value) => {
+                setPageOption(defaultPageOption)
+                backToTop()
+                if (value) {
+                  setSearchCondition({
+                    ...searchCondition,
+                    titleLevel: value,
+                  })
+                } else {
+                  setSearchCondition({
+                    ...searchCondition,
+                    titleLevel: null,
+                  })
+                }
+              }}
+            >
+              {[-1, 9, 1, 2, 3, 4, 5].map((i) => {
+                if (i === -1)
+                  return (
+                    <Option key={i} value={i}>
+                      {'文章标题'}
+                    </Option>
+                  )
+                if (i === 9)
+                  return (
+                    <Option key={i} value={i}>
+                      {'段落观点'}
+                    </Option>
+                  )
+                return <Option key={i} value={i}>{`${i}级标题`}</Option>
+              })}
+            </Select>
+          </Col>
+          <Col span={5}>
+            <span style={{ fontSize: '16px' }}>位置：</span>
+            <Select
+              style={{
+                width: 'calc(100% - 60px)',
+                minWidth: '100px',
+                maxWidth: '180px',
+              }}
+              value={searchCondition.isIncludeHigherTitle}
+              onChange={(value) => {
+                setPageOption(defaultPageOption)
+                backToTop()
+                setSearchCondition({
+                  ...searchCondition,
+                  isIncludeHigherTitle: value,
+                })
+              }}
+            >
+              <Option key="0" value="no">
+                本级标题
+              </Option>
+              <Option key="1" value="yes">
+                本级及上级
+              </Option>
+            </Select>
+          </Col>
+        </Row>
+      </Affix>
       <Spin description="正在检索" spinning={tableLoading}>
         <Table
+          style={{ marginTop: '12px' }}
           // 双击打开详情模态框
           onRow={(record) => {
             return {
@@ -225,7 +320,7 @@ const StructurePage: React.FC = () => {
                 //     firstPara = await getOneParaInDocument(record.id);
                 //   }
 
-                setSelectParaId(record.id)
+                setSelectParaId(record.paragraph)
               },
             }
           }}
@@ -242,7 +337,7 @@ const StructurePage: React.FC = () => {
             const { current, pageSize } = pagination
             handlePaginationChange(current, pageSize)
             // handlerSorterChange(sorter.field, sorter.order);
-            // backToTop(); // 返回页面顶部
+            backToTop() // 返回页面顶部
           }}
           rowKey="id"
           columns={columns}
@@ -261,7 +356,7 @@ const StructurePage: React.FC = () => {
         searchValue={searchValue}
         paraId={selectParaId}
       />
-    </>
+    </div>
   )
 }
 

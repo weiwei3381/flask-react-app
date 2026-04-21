@@ -8,9 +8,15 @@ import {
 import { Button, Modal, Divider, message, Spin, Row, Col, Affix } from 'antd'
 import copy from 'copy-to-clipboard'
 import './DetailModal.css'
-import { fetchUrl } from '../../utils/network'
+import {
+  fetchUrl,
+  getDocumentById,
+  getOutlineJsonByDocumentId,
+  getParagraphById,
+  getSomeParas,
+} from '../../utils/network'
 import SentenceHighlight from './SentenceHighlight'
-import type { OutlineType } from '../../utils'
+import { convertDocTitle, dateToStr, type OutlineType } from '../../utils'
 
 interface SearchModalProps {
   searchValue?: string // 搜索关键词
@@ -48,15 +54,15 @@ const DetailModal: React.FC<SearchModalProps> = ({
   const clickPreviousBtn = () => {
     const [lb, ub] = currentPos // 获得上下限
     setUpLoading(true)
-    // getSomeParas(jumpParaId ? jumpParaId : paraId, [lb - 5, lb - 1])
-    //   .then((continuesParas) => {
-    //     setParas([...continuesParas, ...paras]);
-    //     setUpLoading(false);
-    //   })
-    //   .catch((error) => {
-    //     setUpLoading(false);
-    //     return message.error(`出现错误:${error.message}`);
-    //   });
+    getSomeParas(jumpParaId ? jumpParaId : paraId, lb - 5, lb - 1)
+      .then((continuesParas) => {
+        setParas([...continuesParas, ...paras])
+        setUpLoading(false)
+      })
+      .catch((error) => {
+        setUpLoading(false)
+        return message.error(`出现错误:${error.message}`)
+      })
     setCurrentPos([lb - 5, ub])
   }
 
@@ -64,15 +70,15 @@ const DetailModal: React.FC<SearchModalProps> = ({
   const clickNextBtn = () => {
     const [lb, ub] = currentPos // 获得上下限
     setDownLoading(true)
-    // getSomeParas(jumpParaId ? jumpParaId : paraId, [ub + 1, ub + 10])
-    //   .then((continuesParas) => {
-    //     setParas([...paras, ...continuesParas]);
-    //     setDownLoading(false);
-    //   })
-    //   .catch((error) => {
-    //     message.error(`出现错误:${error.message}`);
-    //     setDownLoading(false);
-    //   });
+    getSomeParas(jumpParaId ? jumpParaId : paraId, ub + 1, ub + 10)
+      .then((continuesParas) => {
+        setParas([...paras, ...continuesParas])
+        setDownLoading(false)
+      })
+      .catch((error) => {
+        message.error(`出现错误:${error.message}`)
+        setDownLoading(false)
+      })
     setCurrentPos([lb, ub + 10])
   }
 
@@ -93,37 +99,24 @@ const DetailModal: React.FC<SearchModalProps> = ({
       // 存在paraId说明已经双击结果了
       if (paraId) {
         setIsloading(true)
-        // const para = await getParagraphById(paraId)
-        // const document = await getDocumentById(para.documentId)
-        // const citeText = await getDocCiteText(para.documentId)
-        // setCiteText(citeText)
-        // // 拿到大纲
-        // const outlineJson = await getOutlineJsonByDocumentId(para.documentId)
-        // setOutlines(outlineJson)
-        // // 页码从0开始, 所以最大页面数得减1
-        // const maxPage = document.paraLength - 1
-        // setMaxPageCount(maxPage)
-        // const lb = para.order - 1 < 0 ? 0 : para.order - 1 // 下限
-        // const ub = para.order + 1 > maxPage ? maxPage : para.order + 1 // 上限
-        // setCurrentPos([lb, ub])
-        // setDocInfo({
-        //   title: convertDocTitle(document.title),
-        //   date: dateToStr(document.date),
-        // })
-        // const continuesParas = await getSomeParas(paraId, [lb, ub])
-
-        const fetchData = async () => {
-          const res = await fetchUrl(
-            'http://127.0.0.1:5000/api/v1/document/fulltext',
-            {
-              documentId: paraId,
-            }
-          )
-          setParas(res.data)
-          setIsloading(false)
-        }
-
-        fetchData()
+        const para = await getParagraphById(paraId)
+        const document = para.document
+        // 拿到大纲
+        const outlineJson = await getOutlineJsonByDocumentId(para.document.id)
+        setOutlines(outlineJson)
+        // 页码从0开始, 所以最大页面数得减1
+        const maxPage = document.paraLength - 1
+        setMaxPageCount(maxPage)
+        const lb = para.order - 1 < 0 ? 0 : para.order - 1 // 下限
+        const ub = para.order + 1 > maxPage ? maxPage : para.order + 1 // 上限
+        setCurrentPos([lb, ub])
+        setDocInfo({
+          title: convertDocTitle(document.title),
+          date: dateToStr(document.date),
+        })
+        const continuesParas = await getSomeParas(paraId, lb, ub)
+        setParas(continuesParas)
+        setIsloading(false)
       }
     }
     getContinuesParas()
@@ -134,30 +127,30 @@ const DetailModal: React.FC<SearchModalProps> = ({
   }, [isModalLoading])
 
   // 点击大纲后跳转到对应段落
-  //   useEffect(() => {
-  //     const getContinuesParas = async () => {
-  //       // 存在jumpParaId说明已经点击大纲了
-  //       if (jumpParaId) {
-  //         setIsloading(true)
-  //         const para = await getParagraphById(jumpParaId)
-  //         const document = await getDocumentById(para.documentId)
-  //         // 页码从0开始, 所以最大页面数得减1
-  //         const maxPage = document.paraLength - 1
-  //         setMaxPageCount(maxPage)
-  //         const lb = para.order - 1 < 0 ? 0 : para.order // 下限
-  //         const ub = para.order + 1 > maxPage ? maxPage : para.order + 2 // 上限
-  //         setCurrentPos([lb, ub])
-  //         setDocInfo({
-  //           title: convertDocTitle(document.title),
-  //           date: dateToStr(document.date),
-  //         })
-  //         const continuesParas = await getSomeParas(jumpParaId, [lb, ub])
-  //         setParas(continuesParas)
-  //         setIsloading(false)
-  //       }
-  //     }
-  //     getContinuesParas()
-  //   }, [jumpParaId])
+  useEffect(() => {
+    const getContinuesParas = async () => {
+      // 存在jumpParaId说明已经点击大纲了
+      if (jumpParaId) {
+        setIsloading(true)
+        const para = await getParagraphById(jumpParaId)
+        const document = para.document
+        // 页码从0开始, 所以最大页面数得减1
+        const maxPage = document.paraLength - 1
+        setMaxPageCount(maxPage)
+        const lb = para.order - 1 < 0 ? 0 : para.order // 下限
+        const ub = para.order + 1 > maxPage ? maxPage : para.order + 2 // 上限
+        setCurrentPos([lb, ub])
+        setDocInfo({
+          title: convertDocTitle(document.title),
+          date: dateToStr(document.date),
+        })
+        const continuesParas = await getSomeParas(jumpParaId, lb, ub)
+        setParas(continuesParas)
+        setIsloading(false)
+      }
+    }
+    getContinuesParas()
+  }, [jumpParaId])
 
   return (
     <Modal
@@ -207,7 +200,7 @@ const DetailModal: React.FC<SearchModalProps> = ({
           {/* 大纲部分 */}
           <Col
             className="body catalogue"
-            span={outlines.length > 0 ? 6 : 0}
+            span={outlines.length > 0 ? 5 : 0}
             style={{
               overflowY: 'auto',
               height: '75vh',
@@ -242,7 +235,7 @@ const DetailModal: React.FC<SearchModalProps> = ({
           {/* 正文部分 */}
           <Col
             className="body content"
-            span={outlines.length > 0 ? 18 : 24}
+            span={outlines.length > 0 ? 19 : 24}
             style={{ overflowY: 'auto', height: '75vh' }}
           >
             {paraId && !isloading && (

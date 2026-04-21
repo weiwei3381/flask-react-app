@@ -3,6 +3,46 @@
 
 import moment from "moment";
 
+// 数据模型
+
+export interface Paragraph{
+    id: number; // 段落ID
+    document: Document; // 文档
+    content: string; // 段落内容
+    order: number; // 段落在文档中的顺序
+}
+
+export interface Document {
+  id: number; // 文档ID
+  title: string; // 文档标题
+  filepath: string | null; // 文档路径
+  author: string | null; // 作者
+  kind: string | null; // 文档类型, 例如doc/pdf等
+  source: string | null; // 文档来源,即来源那个文件夹
+  date: string; // 文档日期
+  star: number; // 文档星级, 0-5
+  paraLength: number; // 文档段落数量
+}
+
+export interface Structure{
+  id: number; // 结构ID
+  document: Document; // 文档ID
+  paragraph: Paragraph; // 段落ID
+  title: string; // 标题内容
+  titleExtend: string | null; // 标题扩展内容, 例如标题后面的内容, 如果没有则为null
+  titleLevel: number; // 标题级别, 1代表一级标题, 2代表二级标题, 9代表观点
+  content: string; // 结构内容, 即段落内容
+  order: number; // 结构在文档中的顺序
+}
+
+export interface Outline{
+  id: number; // 大纲ID
+  document: Document; // 文档ID
+  documentName: string; // 文档名称
+  outlineText: string; // 大纲文本内容
+  outlineWithParaId: string; // 大纲文本内容
+}
+
 /**
  * 词元, 包括词名, 词在句子中的位置和词性, 其中词性为可选项
  */
@@ -368,14 +408,13 @@ export function backToTop() {
 }
 
 /**
- * 将日期转为日期字符串
+ * 将日期字符串截取前10位, 转换为日期对象
  * @param date 日期
  * @param format 日期格式, 默认为'YYYY-MM-DD'
  * @returns日期字符串
  */
-export function dateToStr(date: Date, format?: string): string {
-  if (format) return moment(date).format(format);
-  return moment(date).format('YYYY-MM-DD');
+export function dateToStr(dateStr: string): string {
+  return dateStr.slice(0, 10);
 }
 
 /**

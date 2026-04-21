@@ -1,0 +1,13 @@
+.structure tbody.ant-table-tbody {
+    height: 70vh;
+}
+
+div.structure thead.ant-table-thead th.ant-table-cell {
+    padding-bottom: 8px;
+    padding-top: 8px;
+}
+
+div.structure tbody.ant-table-tbody tr.ant-table-row td {
+    padding-bottom: 12px;
+    padding-top: 12px;
+}

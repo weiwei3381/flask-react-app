@@ -11,8 +11,16 @@ import {
 import { Input, message, Modal, Rate, Space, Spin, Table, Tooltip } from 'antd'
 import type { GetProps } from 'antd'
 import SentenceHighlight from '../../components/SentenceHighlight'
-import type { ResponseData } from '../../../utils'
-import { fetchUrl } from '../../../utils/network'
+import type { Paragraph, ResponseData } from '../../../utils'
+import {
+  fetchUrl,
+  getAllParasByDocumentId,
+  getDocumentById,
+  getOneParaByDocumentId,
+  getOutlineJsonByDocumentId,
+  getParagraphById,
+  getSomeParas,
+} from '../../../utils/network'
 import DetailModal from '../../components/DetailModal'
 
 type SearchProps = GetProps<typeof Input.Search>
@@ -43,35 +51,17 @@ const DocumentsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await fetchUrl(
-        'http://127.0.0.1:5000/api/v1/document/query',
-        {
-          title: searchValue,
-          pageNo: pageOption.pageNo,
-          pageSize: pageOption.pageSize,
-        }
-      )
-      setSearchResult(res.data?.rows)
-    }
-
-    fetchData()
-  }, [pageOption])
-
-  // 搜索词变化则重新进行检索
-  useEffect(() => {
-    const fetchData = async () => {
-      const res = await fetchUrl(
-        'http://127.0.0.1:5000/api/v1/document/query',
-        {
-          title: searchValue,
-        }
-      )
+      const res = await fetchUrl('/api/v1/document/query', {
+        title: searchValue,
+        pageNo: pageOption.pageNo,
+        pageSize: pageOption.pageSize,
+      })
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)
     }
 
     fetchData()
-  }, [searchValue])
+  }, [searchValue, pageOption])
 
   const columns = [
     {
@@ -130,20 +120,7 @@ const DocumentsPage: React.FC = () => {
           const cursor = link ? 'pointer' : 'default'
           return (
             <Tooltip title={tipTitle}>
-              <div
-                style={{ cursor }}
-                onDoubleClick={(evt) => {
-                  if (link) {
-                    evt.stopPropagation() // 如果传入链接, 则阻止冒泡，否则会访问父元素方法导致打开详情页
-                    // if (fs.existsSync(link)) {
-                    //   shell.openPath(link); // 打开外部文件
-                    //   message.info(`正在打开${link}`);
-                    // } else {
-                    //   message.error(`【${link}】文件不存在，无法打开！`);
-                    // }
-                  }
-                }}
-              >
+              <div style={{ cursor }}>
                 {typeIconMap[text]}
                 {text}
               </div>
@@ -251,19 +228,19 @@ const DocumentsPage: React.FC = () => {
                 console.log(record)
                 setModalVisible(true)
                 setModalLoading(true)
-                //   let firstPara: Paragraph = null; // 首段
-                //   // 如果文档比较短，则一次性拿到所有段落，拿过之后就存入cache中了，方便下次读取
-                //   if (record.paraLength < 200) {
-                //     const allParas = await getAllParasByDocumentId(record.id);
-                //     if (allParas && allParas.length > 0) {
-                //       firstPara = allParas[0];
-                //     }
-                //   } else {
-                //     // 获得文档的首段
-                //     firstPara = await getOneParaInDocument(record.id);
-                //   }
+                let firstPara: Paragraph = null // 首段
+                // 如果文档比较短，则一次性拿到所有段落，拿过之后就存入cache中了，方便下次读取
+                if (record.paraLength < 200) {
+                  const allParas = await getAllParasByDocumentId(record.id)
+                  if (allParas && allParas.length > 0) {
+                    firstPara = allParas[0]
+                  }
+                } else {
+                  // 获得文档的首段
+                  firstPara = await getOneParaByDocumentId(record.id)
+                }
 
-                setSelectParaId(record.id)
+                setSelectParaId(firstPara?.id)
               },
             }
           }}

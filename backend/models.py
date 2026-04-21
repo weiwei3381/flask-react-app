@@ -50,6 +50,7 @@ class Paragraph(BaseModel):
     Args:
         BaseModel (_type_): _description_
     """
+    id = IntegerField(primary_key=True)  # 段落ID，自增主键
     document = ForeignKeyField(Document, backref='paragraphs', on_delete='CASCADE', on_update='NO ACTION')
     order = IntegerField() # 段落序号
     content = TextField()  # 段落内容
@@ -73,6 +74,23 @@ class Structure(BaseModel):
     class Meta:
         table_name = 'structure'
 
+
+class Outline(BaseModel):
+    """大纲表"""
+
+    id = IntegerField(primary_key=True)  # 结构ID，自增主键
+    document = ForeignKeyField(Document, backref="outline", on_delete="CASCADE")
+    documentName = CharField(max_length=255)  # 对应文档名称
+    # 大纲文本内容，用\n切分，例如“一、研究意义\n二、本文所用的方法\n(一)粒子群算法”
+    outlineText = TextField()
+    # 大纲带段落id标识的json内容，将对象使用JSON.stringify变成文本后存储，格式为：{title: string, paraId: number}[]，可以方便跳转到具体id
+    outlineWithParaId = TextField()
+    createdAt = DateTimeField(null=True)  # 创建时间
+
+    class Meta:
+        table_name = "outline"
+
+
 db.connect()
-db.create_tables([Document, Paragraph, Structure], safe=True)
-print(f"数据库连接成功，表格已创建（如果不存在）。")
+db.create_tables([Document, Paragraph, Structure, Outline], safe=True)
+print(f"数据库连接成功！")
