@@ -71,17 +71,18 @@ export interface ResponseData {
 
 // 结构搜索结果的接口
 export interface StructureResult {
-    id: number;
-    documentId: number;
-    documentName: string;
-    date: string;
-    order: number;
-    paraId: number;
-    title: string;
-    titleLevel: number;
-    content: string;
-    filepath: string | null; // 文件路径
-  }
+  id: number
+  documentId: number
+  documentName: string
+  date: string
+  order: number
+  paraId: number
+  title: string
+  titleLevel: number
+  content: string
+  filepath: string | null // 文件路径
+  paragraph?: number // 可选项，段落ID
+}
 
 // 句子中匹配的类型
 type Match = {

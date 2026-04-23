@@ -51,6 +51,7 @@ const DocumentsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setTableLoading(true)
       const res = await fetchUrl('/api/v1/document/query', {
         title: searchValue,
         pageNo: pageOption.pageNo,
@@ -58,6 +59,7 @@ const DocumentsPage: React.FC = () => {
       })
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)
+      setTableLoading(false)
     }
 
     fetchData()
@@ -262,6 +264,7 @@ const DocumentsPage: React.FC = () => {
           rowKey="id"
           columns={columns}
           dataSource={searchResult}
+          locale={{ emptyText: `关键词【${searchValue}】未能找到数据！` }}
         />
       </Spin>
       <DetailModal

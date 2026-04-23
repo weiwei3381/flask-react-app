@@ -34,7 +34,7 @@ import {
 } from '../../../utils'
 import { fetchUrl } from '../../../utils/network'
 import DetailModal from '../../components/DetailModal'
-import ColorDiv from '../../components/colorDiv'
+import ColorDiv from '../../components/ColorDiv'
 import './index.css'
 
 type SearchProps = GetProps<typeof Input.Search>
@@ -75,6 +75,7 @@ const StructurePage: React.FC = () => {
   // 搜索词或者页面变化则重新进行检索
   useEffect(() => {
     const fetchData = async () => {
+      setTableLoading(true)
       const res = await fetchUrl('/api/v1/structure/query', {
         title: searchValue,
         pageNo: pageOption.pageNo,
@@ -82,6 +83,7 @@ const StructurePage: React.FC = () => {
       })
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)
+      setTableLoading(false)
     }
 
     fetchData()
@@ -298,7 +300,12 @@ const StructurePage: React.FC = () => {
           </Col>
         </Row>
       </Affix>
-      <Spin description="正在检索" spinning={tableLoading}>
+      <Spin
+        description={`正在检索${
+          searchValue === '' ? '...' : '【' + searchValue + '】'
+        }`}
+        spinning={tableLoading}
+      >
         <Table
           style={{ marginTop: '12px' }}
           // 双击打开详情模态框
@@ -342,6 +349,7 @@ const StructurePage: React.FC = () => {
           rowKey="id"
           columns={columns}
           dataSource={searchResult}
+          locale={{ emptyText: `关键词【${searchValue}】未能找到数据！` }}
         />
       </Spin>
       <DetailModal
