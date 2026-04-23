@@ -80,6 +80,9 @@ const StructurePage: React.FC = () => {
         title: searchValue,
         pageNo: pageOption.pageNo,
         pageSize: pageOption.pageSize,
+        isIncludeHigherTitle: searchCondition.isIncludeHigherTitle,
+        titleLevel:
+          searchCondition.titleLevel == null ? 0 : searchCondition.titleLevel,
       })
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)
@@ -87,7 +90,7 @@ const StructurePage: React.FC = () => {
     }
 
     fetchData()
-  }, [searchValue, pageOption])
+  }, [searchValue, pageOption, searchCondition])
 
   const columns = [
     {
@@ -102,7 +105,10 @@ const StructurePage: React.FC = () => {
     },
     {
       title: '标题',
-      dataIndex: 'title',
+      dataIndex:
+        searchCondition.isIncludeHigherTitle === 'yes'
+          ? 'titleExtend'
+          : 'title',
       key: 'title',
       ellipsis: false,
       width: '15%',
@@ -111,7 +117,7 @@ const StructurePage: React.FC = () => {
           return (
             <SentenceHighlight
               paragraph={text}
-              highlightKeys={searchValue.split(/\s+/g)}
+              highlightKeys={[...searchValue.split(/\s+/g), '/']}
               isSentenceHighlight={false}
               highlightStyle={{
                 sentenceBackgroundColor: '#ffec99',

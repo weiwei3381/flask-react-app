@@ -118,9 +118,13 @@ def query_in_structure():
     title_level_query = data.get("titleLevel", 9)
     pageNo = data.get('pageNo', 1)  # 页码，默认为1
     pageSize = data.get('pageSize', 10)  # 每页大小，默认为10
+    is_search_extend = data.get(
+        "isIncludeHigherTitle", "no"
+    )  # 是否包含上级标题,参数为yes或no，默认为no
     structures = utils.search_structure_by_title(
-        title_query, title_level_query, pageNo, pageSize
+        title_query, title_level_query, is_search_extend, pageNo, pageSize
     )
+
     return jsonify({
         "status": 200,
         "message": "获取成功",

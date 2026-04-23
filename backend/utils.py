@@ -89,7 +89,9 @@ def get_all_paras_by_documentId(document_id: int) -> list:
 
 
 # -------------------结构表（Structure）-------------------
-def search_structure_by_title(query: str, maxTitleLevel=9, pageNo=1, pageSize=10) -> list:
+def search_structure_by_title(
+    query: str, titleLevel=9, is_search_extend="no", pageNo=1, pageSize=10
+) -> list:
     """
 
     Args:
@@ -116,17 +118,22 @@ def search_structure_by_title(query: str, maxTitleLevel=9, pageNo=1, pageSize=10
 
     query = query.strip()
     # 如果检索词中没有空格，进行直接进行标题搜索
+
     if " " not in query:
-        structures = Structure.select().where((Structure.title.contains(query)) & (Structure.titleLevel <= maxTitleLevel)).order_by(Structure.id).paginate(pageNo, pageSize)
-        results_count = (
-            Structure.select()
-            .where(
-                (Structure.title.contains(query))
-                & (Structure.titleLevel <= maxTitleLevel)
+        # 如果is_search_extend参数为'yes'，则在titleExtend字段中进行搜索
+        if is_search_extend == "yes":
+            search_params = Structure.select().where(
+                Structure.titleExtend.contains(query)
             )
-            .count()
-        )
+        else:
+            search_params = Structure.select().where(Structure.title.contains(query))
+        if titleLevel > 0:
+            search_params = search_params.where(Structure.titleLevel == titleLevel)
+        elif titleLevel < 0:
+            search_params = search_params.where(Structure.titleLevel <= 5)
+        results_count = search_params.count()
         rows = []
+        structures = search_params.order_by(Structure.id).paginate(pageNo, pageSize)
         for struct in structures:
             row = model_to_dict(struct, recurse=False)
             row["documentName"] = struct.document.title
@@ -140,7 +147,14 @@ def search_structure_by_title(query: str, maxTitleLevel=9, pageNo=1, pageSize=10
     query_words = query.split()  # 获得多个检索词
     split_query= Structure.select()
     for word in query_words:
-        split_query = split_query.where(Structure.title.contains(word))
+        if is_search_extend == "yes":
+            split_query = split_query.where(Structure.titleExtend.contains(word))
+        else:
+            split_query = split_query.where(Structure.title.contains(word))
+    if titleLevel > 0:
+        split_query = split_query.where(Structure.titleLevel == titleLevel)
+    elif titleLevel < 0:
+        split_query = split_query.where(Structure.titleLevel <= 5)
     results = split_query.order_by(Structure.id).paginate(pageNo, pageSize)
     results_count = split_query.count()
     rows = []
