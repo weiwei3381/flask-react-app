@@ -1,21 +1,20 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react'
 import {
-  FileOutlined,
   FileSearchOutlined,
-  PieChartOutlined,
+  HomeOutlined,
+  MonitorOutlined,
   ProfileOutlined,
-  ReadOutlined,
-  TeamOutlined,
-  UserOutlined,
+  ReconciliationTwoTone,
+  SettingOutlined,
+  ToolOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
-import { Breadcrumb, Layout, Menu, theme } from 'antd'
+import { Layout, Menu, theme } from 'antd'
 import './App.css'
 import DocumentsPage from './renderer/pages/documentPage'
 import StructurePage from './renderer/pages/structurePage'
 
-const { Header, Content, Footer, Sider } = Layout
+const { Content, Footer, Sider } = Layout
 
 const siderStyle: React.CSSProperties = {
   overflow: 'auto',
@@ -44,20 +43,16 @@ function getItem(
 }
 
 const items: MenuItem[] = [
-  getItem('欢迎', '欢迎', <PieChartOutlined />),
-  getItem('全文检索', '全文检索', <ReadOutlined />),
+  getItem('欢迎', '欢迎', <HomeOutlined />),
+  getItem('全文检索', '全文检索', <MonitorOutlined />),
   getItem('结构搜索', '结构搜索', <ProfileOutlined />),
   getItem('文档检索', '文档检索', <FileSearchOutlined />),
-  getItem('User', 'sub1', <UserOutlined />, [
-    getItem('Tom', '15'),
-    getItem('Bill', '16'),
-    getItem('Alex', '17'),
+  getItem('常用工具', '常用工具', <ToolOutlined />, [
+    getItem('二维码', '15'),
+    getItem('pdf转图片', '16'),
+    getItem('图片合成pdf', '17'),
   ]),
-  getItem('Team', 'sub2', <TeamOutlined />, [
-    getItem('Team 1', '28'),
-    getItem('Team 2', '29'),
-  ]),
-  getItem('Files', '30', <FileOutlined />),
+  getItem('设置', 'sub2', <SettingOutlined />),
 ]
 
 const App: React.FC = () => {
@@ -75,7 +70,9 @@ const App: React.FC = () => {
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}
       >
-        <div className="demo-logo-vertical">多粒度检索系统</div>
+        <div className="demo-logo-vertical">
+          {collapsed ? <ReconciliationTwoTone /> : '多粒度检索系统'}
+        </div>
         <Menu
           theme="dark"
           defaultSelectedKeys={['欢迎']}
