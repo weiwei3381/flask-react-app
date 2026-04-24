@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import {
+  FilePdfOutlined,
   FileSearchOutlined,
   HomeOutlined,
   MonitorOutlined,
   ProfileOutlined,
+  QrcodeOutlined,
   ReconciliationTwoTone,
   SettingOutlined,
   ToolOutlined,
@@ -48,11 +50,10 @@ const items: MenuItem[] = [
   getItem('结构搜索', '结构搜索', <ProfileOutlined />),
   getItem('文档检索', '文档检索', <FileSearchOutlined />),
   getItem('常用工具', '常用工具', <ToolOutlined />, [
-    getItem('二维码', '15'),
-    getItem('pdf转图片', '16'),
-    getItem('图片合成pdf', '17'),
+    getItem('二维码', '二维码', <QrcodeOutlined />),
+    getItem('pdf工具', 'pdf工具', <FilePdfOutlined />),
   ]),
-  getItem('设置', 'sub2', <SettingOutlined />),
+  getItem('设置', '设置', <SettingOutlined />),
 ]
 
 const App: React.FC = () => {
