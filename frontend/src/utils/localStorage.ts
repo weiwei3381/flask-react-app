@@ -3,8 +3,11 @@
  * 提供类型安全的增删查改方法
  */
 
-type LocalNameSpaceKeys = 'documentPage' | 'structurePage' | 'welcomePage' // 定义命名空间类型
-type LocalStorageKeys =
+export type LocalNameSpaceKeys =
+  | 'documentPage'
+  | 'structurePage'
+  | 'welcomePage' // 定义命名空间类型
+export type LocalStorageKeys =
   | 'searchHistory'
   | 'documentTotal'
   | 'structureTotal'
@@ -38,7 +41,7 @@ class LocalStorageManager {
    * @param value 要存储的值
    * @returns 操作是否成功
    */
-  static addNameSpaceItem<T>(
+  static setNameSpaceItem<T>(
     nameSpace: LocalNameSpaceKeys,
     key: LocalStorageKeys,
     value: T
@@ -133,6 +136,14 @@ class LocalStorageManager {
    */
   static hasKey(key: LocalStorageKeys): boolean {
     return window.localStorage.getItem(key) !== null
+  }
+
+  /**
+   * 增加搜索次数，每次调用时会将 welcomePage 命名空间下的 searchCount 键的值加 1
+   */
+  static addSearchCount() {
+    const currentCount = this.getNameSpaceItem('welcomePage', 'searchCount', 0)
+    this.setNameSpaceItem('welcomePage', 'searchCount', currentCount + 1)
   }
 }
 

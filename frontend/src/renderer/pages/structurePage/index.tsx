@@ -36,6 +36,8 @@ import { fetchUrl } from '../../../utils/network'
 import DetailModal from '../../components/DetailModal'
 import ColorDiv from '../../components/ColorDiv'
 import './index.css'
+import LocalStorageManager from '../../../utils/localStorage'
+import SearchHistory from '../../components/SearchHistory'
 
 type SearchProps = GetProps<typeof Input.Search>
 const { Search } = Input
@@ -84,6 +86,24 @@ const StructurePage: React.FC = () => {
         titleLevel:
           searchCondition.titleLevel == null ? 0 : searchCondition.titleLevel,
       })
+      if (searchValue === '') {
+        if (
+          res.data?.count >
+          LocalStorageManager.getNameSpaceItem(
+            'welcomePage',
+            'structureTotal',
+            0
+          )
+        ) {
+          LocalStorageManager.setNameSpaceItem(
+            'welcomePage',
+            'structureTotal',
+            res.data?.count
+          ) // 更新标题观点总数的localStorage
+        }
+      } else {
+        LocalStorageManager.addSearchCount() // 增加搜索次数
+      }
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)
       setTableLoading(false)
@@ -306,6 +326,15 @@ const StructurePage: React.FC = () => {
           </Col>
         </Row>
       </Affix>
+      <SearchHistory
+        historyType="structurePage"
+        searchValue={searchValue}
+        onClickValue={(value) => {
+          setSearchValue(value.trim())
+          setInputValue(value.trim())
+          setPageOption(defaultPageOption)
+        }}
+      />
       <Spin
         description={`正在检索${
           searchValue === '' ? '...' : '【' + searchValue + '】'

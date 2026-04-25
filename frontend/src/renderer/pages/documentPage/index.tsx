@@ -22,6 +22,8 @@ import {
   getSomeParas,
 } from '../../../utils/network'
 import DetailModal from '../../components/DetailModal'
+import LocalStorageManager from '../../../utils/localStorage'
+import SearchHistory from '../../components/SearchHistory'
 
 type SearchProps = GetProps<typeof Input.Search>
 const { Search } = Input
@@ -57,6 +59,13 @@ const DocumentsPage: React.FC = () => {
         pageNo: pageOption.pageNo,
         pageSize: pageOption.pageSize,
       })
+      if (searchValue === '') {
+        LocalStorageManager.setNameSpaceItem(
+          'welcomePage',
+          'documentTotal',
+          res.data?.count || 0
+        ) // 更新文档总数的localStorage
+      }
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)
       setTableLoading(false)
@@ -221,6 +230,15 @@ const DocumentsPage: React.FC = () => {
           }}
         />
       </Space.Compact>
+      <SearchHistory
+        historyType="documentPage"
+        searchValue={searchValue}
+        onClickValue={(value) => {
+          setSearchValue(value.trim())
+          setInputValue(value.trim())
+          setPageOption(defaultPageOption)
+        }}
+      />
       <Spin description="正在检索" spinning={tableLoading}>
         <Table
           // 双击打开详情模态框

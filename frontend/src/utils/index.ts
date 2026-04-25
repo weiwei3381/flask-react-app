@@ -725,3 +725,13 @@ export function getCurrentDate(format = 'YYYY-MM-DD') {
 export function getCurrentTime(format = 'YYYY-MM-DD HH:mm:ss') {
   return moment().format(format);
 }
+
+/**
+ * 删除搜索词的头尾空白符以及以及>》符号
+ * @param text 搜索文本
+ * @returns 去掉开头和结尾空格以及>》符号的文本
+ */
+export function searchTrim(text: string): string {
+    if (!text || text.trim() === '') return '';
+    return text.replace(/^[\s>》]+|[\s>》]+$/gm, '');
+  }

@@ -1,0 +1,12 @@
+div.search-history button.expand-toggle span {
+    margin-left: 2px;
+}
+
+div.search-history button.search-clear-btn {
+    color: #FA541C;
+}
+
+div.search-history .search-clear-btn span {
+    margin-left: 2px;
+    color: #FA541C;
+}
