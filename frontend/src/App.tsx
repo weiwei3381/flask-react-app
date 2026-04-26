@@ -1,16 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react'
 import {
-  CalendarTwoTone,
   FilePdfOutlined,
   FileSearchOutlined,
   HomeOutlined,
   MonitorOutlined,
   OrderedListOutlined,
-  ProjectFilled,
-  ProjectTwoTone,
   QrcodeOutlined,
-  ReconciliationTwoTone,
   SettingOutlined,
   ToolOutlined,
 } from '@ant-design/icons'
@@ -62,12 +57,95 @@ const items: MenuItem[] = [
   getItem('设置', '设置', <SettingOutlined />),
 ]
 
+// 初始标签页内容
+const initialItems = [
+  {
+    label: '欢迎',
+    children: <WelcomePage />,
+    key: '1',
+    closable: false,
+  },
+]
+
+type TargetKey = React.MouseEvent | React.KeyboardEvent | string
+
 const App: React.FC = () => {
   const [selectedMenuKey, setSelectedMenuKey] = useState('结构搜索')
+  const [activeKey, setActiveKey] = useState('1') // 当前激活的标签页key
+  const [tabsItems, setTabsItems] = useState(initialItems) // 标签页的内容
   const [collapsed, setCollapsed] = useState(false)
   const {
-    token: { colorBgContainer, borderRadiusLG },
+    token: { borderRadiusLG },
   } = theme.useToken()
+
+  // 根据点击的菜单key不同增加标签
+  const addTabByClickMenu = (menuKey: string) => {
+    const addKey = Number(tabsItems[tabsItems.length - 1].key) + 1 + ''
+    switch (menuKey) {
+      case '文档检索': {
+        setTabsItems([
+          ...tabsItems,
+          {
+            label: '文档检索',
+            children: <DocumentsPage />,
+            key: addKey,
+            closable: true,
+          },
+        ])
+        setActiveKey(addKey)
+        break
+      }
+      case '结构搜索': {
+        setTabsItems([
+          ...tabsItems,
+          {
+            label: '结构搜索',
+            children: <StructurePage />,
+            key: addKey,
+            closable: true,
+          },
+        ])
+        setActiveKey(addKey)
+        break
+      }
+      case '欢迎':
+        setActiveKey('1')
+        break
+
+      default:
+        break
+    }
+  }
+
+  // 移除指定标签
+  const removeTargetTab = (targetKey: TargetKey) => {
+    let newActiveKey = activeKey
+    let lastIndex = -1
+    tabsItems.forEach((item, i) => {
+      if (item.key === targetKey) {
+        lastIndex = i - 1
+      }
+    })
+    const newPanes = tabsItems.filter((item) => item.key !== targetKey)
+    if (newPanes.length && newActiveKey === targetKey) {
+      if (lastIndex >= 0) {
+        newActiveKey = newPanes[lastIndex].key
+      } else {
+        newActiveKey = newPanes[0].key
+      }
+    }
+    setTabsItems(newPanes)
+    setActiveKey(newActiveKey)
+  }
+
+  // 标签更改函数
+  const onEditTabs = (targetKey: TargetKey, action: 'add' | 'remove') => {
+    if (action === 'add') {
+      addTabByClickMenu(selectedMenuKey)
+    } else {
+      removeTargetTab(targetKey)
+    }
+  }
 
   return (
     <Layout hasSider>
@@ -88,17 +166,7 @@ const App: React.FC = () => {
           onSelect={(info) => {
             setSelectedMenuKey(info.key)
             console.log(info)
-            switch (info.key) {
-              case '文档检索':
-                console.log('跳转到文档检索页面')
-                break
-              case '结构搜索':
-                console.log('跳转到结构检索页面')
-                break
-
-              default:
-                break
-            }
+            addTabByClickMenu(info.key)
           }}
         />
       </Sider>
@@ -109,26 +177,16 @@ const App: React.FC = () => {
           style={{
             margin: '12px 10px 0',
             overflow: 'initial',
-            // background: colorBgContainer,
             borderRadius: borderRadiusLG,
           }}
         >
-          {/* {selectedMenuKey == '文档检索' && <DocumentsPage />}
-          {selectedMenuKey == '结构搜索' && <StructurePage />} */}
-          <Tabs type="editable-card">
-            <Tabs.TabPane tab="欢迎" key="欢迎">
-              <WelcomePage />
-            </Tabs.TabPane>
-            <Tabs.TabPane tab="文档检索" key="文档检索">
-              <DocumentsPage />
-            </Tabs.TabPane>
-            <Tabs.TabPane tab="文档检索22" key="文档检索22">
-              <DocumentsPage />
-            </Tabs.TabPane>
-            <Tabs.TabPane tab="结构搜索" key="结构搜索">
-              <StructurePage />
-            </Tabs.TabPane>
-          </Tabs>
+          <Tabs
+            activeKey={activeKey}
+            type="editable-card"
+            items={tabsItems}
+            onChange={(key) => setActiveKey(key)}
+            onEdit={onEditTabs}
+          />
         </Content>
         <Footer style={{ textAlign: 'center', padding: '10px' }}>
           多粒度文档检索系统 ©{new Date().getFullYear()} Created by 大熊

@@ -65,6 +65,8 @@ const DocumentsPage: React.FC = () => {
           'documentTotal',
           res.data?.count || 0
         ) // 更新文档总数的localStorage
+      } else {
+        LocalStorageManager.addSearchCount() // 增加搜索次数
       }
       setSearchResult(res.data?.rows)
       setTotal(res.data?.count)

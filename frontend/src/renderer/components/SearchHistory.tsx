@@ -56,7 +56,7 @@ const SearchHistory: React.FC<SearchHistoryProp> = ({
       }
     }
     updateHistory()
-  }, [searchValue])
+  }, [searchValue, historyType, maxLength, searchHistory])
 
   return (
     <Row style={{ marginBottom: '12px' }} className="search-history">
