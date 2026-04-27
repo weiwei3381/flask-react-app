@@ -4,6 +4,7 @@
  */
 
 export type LocalNameSpaceKeys =
+  | 'fullTextPage'
   | 'documentPage'
   | 'structurePage'
   | 'welcomePage' // 定义命名空间类型

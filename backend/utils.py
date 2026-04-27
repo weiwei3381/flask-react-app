@@ -7,6 +7,8 @@
 @Desc    :   数据库工具函数
 '''
 
+import jieba, plyvel, re, json, copy
+from plyvel import CorruptionError, IOError
 from models import Document, Paragraph, Structure, Outline
 from playhouse.shortcuts import model_to_dict
 
@@ -15,6 +17,16 @@ cache = {
     "document_id": {},  # 文档id检索缓存，key为documentId，value为文档内容
     "document_fulltext": {}  # 文档全文缓存，key为documentId，value为段落列表
 }
+
+Reverse_Cache_Map = {}
+
+# 全文倒排索引
+try:
+    reversed_Db = plyvel.DB("./data", create_if_missing=True)
+except IOError as e:
+    print("无法打开倒排索引数据库，可能是数据库文件损坏或权限问题")
+    reversed_Db = None
+
 
 # -------------------文档表（Document）-------------------
 
@@ -212,3 +224,300 @@ def get_outline_by_documentId(document_id: int) -> dict:
     """根据文档ID获得大纲内容，返回标题和观点列表"""
     outline = Outline.get_or_none(Outline.document == document_id)
     return model_to_dict(outline, recurse=False) if outline else None
+
+# -------------------分词相关-------------------
+
+
+def is_continue(sentence: str, segment: str, position: int) -> bool:
+    """
+    对于句子sentence, 从第position位开始,是否是从segment开始继续
+    例如对于"安全形势分析"这个sentence, "安全"后面就没法接"全形",因为"安全"后面必须以"形"开头
+    """
+    # Python 的字符串切片如果越界会自动处理，不会报错，因此不需要像 TS 那样担心索引范围
+    return sentence.startswith(segment, position)
+
+
+def get_next_match_list(
+    sentence: str, cut_list: list[str], match_list: list[dict]
+) -> list[dict]:
+    """得到下一个对应的匹配列表
+
+    Args:
+        sentence (str): _description_
+        cut_list (list[str]): _description_
+        match_list (list[dict]): _description_
+
+    Returns:
+        list[dict]: _description_
+    """
+    # 接下来新的匹配列表
+    new_match_list = []
+
+    # 对当前每个匹配查找下一个匹配是否存在
+    for match in match_list:
+        for cut in cut_list:
+            # 获取当前匹配句子的长度作为起始位置
+            current_length = len(match["sentence"])
+
+            if is_continue(sentence, cut, current_length):
+                # 创建新的 segments 列表
+                segments = match["segments"] + [cut]
+
+                new_match_list.append(
+                    {
+                        "sentence": match["sentence"] + cut,
+                        "segments": segments,
+                        "merge": "|".join(segments),
+                    }
+                )
+
+    return new_match_list
+
+
+def split_words_for_search(sentence: str) -> list:
+    """按照搜索习惯进行句子切分, 同一个句子可能切分为不同情况
+
+    Args:
+        sentence (str): 句子
+
+    Returns:
+        list: 按照搜索习惯返回的搜索词划分列表,
+        例如"安全形势分析"划分为: {"merge":"安全形势|分析"}和{"merge":"安全|形势|分析"}
+    """
+
+    cut_list = list(jieba.cut_for_search(sentence))
+    # 初始化空的匹配列表
+    match_list = [{"sentence": "", "segments": [], "merge": ""}]
+    result_match_list = []  # 匹配结果列表
+
+    # 最多循环20次, 避免死循环, 实际上一般情况下循环次数不会超过3次
+    for loop in range(20):
+        next_match_list = get_next_match_list(sentence, cut_list, match_list)
+        continue_match_list = []  # 句子不完整，还需要再继续匹配的列表
+        for next_match in next_match_list:
+            # 考虑到可能存在相同词语在一个句子中,因此不同位置的相同词语会被看成是2个词, 因此在最后获取结果时需要考虑是否已经存在过
+            if next_match["sentence"] == sentence:
+                is_exist = False  # 当前列表是否存在,默认为否
+                for result_match in result_match_list:
+                    if next_match["merge"] == result_match["merge"]:
+                        is_exist = True
+                        break
+                if not is_exist:
+                    result_match_list.append(next_match)
+            else:
+                continue_match_list.append(next_match)
+        # 如果还有不完整列表, 那么继续进行匹配, 否则跳出循环
+        if len(continue_match_list) > 0:
+            match_list = continue_match_list
+        else:
+            break
+
+    # 考虑极端情况, 当前面代码出问题时, 返回默认切分情况
+    if len(result_match_list) == 0:
+        return [
+            {
+                "sentence": sentence,
+                "segments": list(jieba.cut(sentence)),
+                "merge": "|".join(list(jieba.cut(sentence))),
+            }
+        ]
+    else:
+        return result_match_list
+
+
+# -------------------全文检索-------------------
+
+
+def search_trim(text: str) -> str:
+    """删除搜索词的头尾空白符以及以及>》符号
+
+    Args:
+        text (str): 搜索文本
+
+    Returns:
+        str: 去掉开头和结尾空格以及>》符号的文本
+    """
+    if not text or text.strip() == "":
+        return ""
+    return re.sub(r"^[\s>》]+|[\s>》]+$", "", text, flags=re.MULTILINE)
+
+
+def split_search_value(search_value: str) -> list:
+    trim_value = search_trim(search_value)  # 删除首尾多余字符的搜索词
+    # 如果内容不存在,则直接返回
+    if not trim_value or trim_value.strip() == "":
+        return []
+    # // 分隔正则，增加 > 作为控制符
+    split_reg = re.compile(r"[ >》]+")
+    search_parts = split_reg.split(trim_value)
+    search_continue_parts = []
+    for i in range(len(search_parts)):
+        search_part = search_parts[i]
+        matches = split_words_for_search(search_part)
+        search_continue_parts.append(
+            {
+                "value": matches[0]["sentence"],
+                "split_words": [t["segments"] for t in matches],
+                "is_sequence": False,  # 默认不顺序连接
+            }
+        )
+    return search_continue_parts
+
+
+def json_to_map_directly(json_txt: str):
+    """
+    将json字符串转为字典对象, 直接转换, 不使用迭代方法
+    :param json_txt: json字符串
+    :return: 转换为字典
+    """
+    try:
+        json_list = json.loads(json_txt)
+        # 检查列表是否非空，且第一个元素是长度为2的列表（键值对）
+        if json_list and len(json_list) > 0 and len(json_list[0]) == 2:
+            return dict(json_list)
+    except (json.JSONDecodeError, TypeError, KeyError):
+        # 捕获 JSON 解析错误或类型错误
+        pass
+
+    return {}
+
+
+def find_short_pos(
+    pos_list1: list[int], pos_list2: list[int], min_dis: int
+) -> list[int]:
+    # 满足条件的点的位置集合，用Set利于去重
+    pos_set = set()
+
+    for pos1 in pos_list1:
+        for pos2 in pos_list2:
+            pos_dis = abs(pos1 - pos2)
+            if pos_dis <= min_dis:
+                pos_set.add(pos1)
+                pos_set.add(pos2)
+
+    if not pos_set:
+        return []
+
+    return list(pos_set)
+
+
+def get_map_from_reversedDb(key: str) -> dict:
+    """从倒排索引中根据关键词获取id和位置Map<number, number[]>
+
+    Args:
+        key (str): _description_
+
+    Returns:
+        dict: _description_
+    """
+    json_str = ""
+    print(f"正在从倒排索引中获取key: {key} 的数据")
+    # 如果已经存有对应的存储库缓存，且缓存中有那个key，则直接返回
+    if key in Reverse_Cache_Map:
+        print(f"倒排索引缓存命中，key: {key}")
+        return Reverse_Cache_Map[key]
+    else:
+        try:
+            json_byte_str = reversed_Db.get(key.encode("utf-8"))  # 获取纯json字符串
+        except CorruptionError as e:
+            print(f"未找到key: {key} 的倒排索引数据")
+            json_byte_str = b""
+        json_str = json_byte_str.decode("utf-8")
+        result_json = json_to_map_directly(json_str)
+        # 将结果存入缓存
+        Reverse_Cache_Map[key] = result_json
+        return result_json
+
+
+def search_continue_part(continue_part: list[str]) -> dict:
+    # 获取第一个词元对应的结果, 将以这个结果不断缩减
+    init_map = get_map_from_reversedDb(continue_part[0])
+    result_sentence_map = copy.deepcopy(init_map)
+    for i in range(1, len(continue_part)):
+        search_element = continue_part[i]
+        search_id_map = get_map_from_reversedDb(search_element)
+        delete_keys = []  # 需要删除的key列表
+
+        # 判断连续情况
+        for sentence_id in result_sentence_map.keys():
+            compare_pos: list[int] = []
+            if sentence_id in search_id_map:
+                # 获得前一个词的位置列表, 以及后一个词的位置列表, 如果前一个词的位置中含有后一个词的位置-1, 则代表两者相邻
+                previous_pos_list = result_sentence_map[sentence_id]
+                next_pos_list = search_id_map[sentence_id]
+                for pos in next_pos_list:
+                    # 将每个相邻的位置都存进去，作为下一个循环的初始值
+                    if (pos - 1) in previous_pos_list:
+                        compare_pos.append(pos)
+            # 如果结果集合中没有该句子id, 则删除
+            if len(compare_pos) > 0:
+                result_sentence_map[sentence_id] = compare_pos
+            else:
+                delete_keys.append(sentence_id)
+        # 删除该句子id
+        for k in delete_keys:
+            result_sentence_map.pop(k, None)
+
+    return result_sentence_map
+
+
+def search_multi_continue_parts(continue_parts: list[list[str]]) -> dict:
+    # 第一个搜索作为初始map
+    init_result_map = search_continue_part(continue_parts[0])
+    for i in range(1, len(continue_parts)):
+        result_sentence_map = search_continue_part(continue_parts[i])
+        for key in result_sentence_map.keys():
+            if not key in init_result_map:
+                init_result_map[key] = result_sentence_map[key]
+    return init_result_map
+
+
+def searchFullText(search_value: str, min_distance: int) -> dict:
+    search_continuous_parts = split_search_value(search_value)
+    # 如果没有搜索词, 则返回为空
+    if not search_continuous_parts or len(search_continuous_parts) == 0:
+        return {}
+
+    # 如果搜索词只有一个连续长度, 直接返回即可
+    if len(search_continuous_parts) == 1:
+        return search_multi_continue_parts(search_continuous_parts[0]["split_words"])
+
+    # 多个连续部分进行求交集
+    continue_result_maps = []  # 连续部分结果集合
+    for continue_part in search_continuous_parts:
+        continue_result = search_multi_continue_parts(continue_part["split_words"])
+        continue_result_maps.append(continue_result)
+    # 获取第一个词元对应的结果, 将以这个结果不断缩减
+    result_sentence_map = copy.deepcopy(continue_result_maps[0])
+    for i in range(1, len(continue_result_maps)):
+        search_part = search_continuous_parts[i]  # 待比较的连续部分,从第2个(i=1)开始
+        comp_map = continue_result_maps[i]  # 比较的表
+        delete_keys = []  # 需要删除的key列表
+        for result_key in result_sentence_map.keys():
+            # 如果比较表中没有这个键, 则需要删除
+            if not result_key in comp_map:
+                delete_keys.append(result_key)
+                continue
+            # 如果比较的表中有这个键, 但是如果用户传入了关键词最短距离, 还需要考虑词条距离
+            if min_distance > 0:
+                result_positions = result_sentence_map[result_key]  # 获得关键词位置
+                comp_positions = comp_map[result_key]
+                # 计算满足最近条件的位置集合
+                short_pos_list = find_short_pos(
+                    result_positions, comp_positions, min_distance
+                )
+                # 如果没有满足条件的位置，则删除
+                if len(short_pos_list) == 0:
+                    delete_keys.append(result_key)
+                else:
+                    if len(continue_result_maps) > 2:
+                        # 如果满足距离要求, 而且还有另外的词, 则在结果Map的指定段落位置增加第二个词的位置
+                        result_sentence_map[result_key] = short_pos_list
+    for k in delete_keys:
+        result_sentence_map.pop(k, None)
+
+
+if __name__ == "__main__":
+    print(split_words_for_search("安全形势分析"))
+    # 测试分词函数
+    print(searchFullText("社会公共利益", 0))

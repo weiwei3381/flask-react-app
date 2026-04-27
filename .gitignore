@@ -24,3 +24,4 @@ __pycache__/
 # 数据库
 *.db
 *.sqlite
+data/
