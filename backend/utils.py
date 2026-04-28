@@ -199,7 +199,6 @@ def get_one_para_by_documentId(document_id: int) -> list:
 def get_some_paras(paragraph_id: int, lb: int, ub: int) -> list:
     para = get_paragraph_by_id(paragraph_id)
     doc = get_document_by_id(para["document"]["id"])
-    print(doc)
     # 如果文档段落数比较小，则一次拿到所有段落
     if doc["paraLength"] < 200:
         all_paras = get_all_paras_by_documentId(doc["id"])
@@ -224,6 +223,95 @@ def get_outline_by_documentId(document_id: int) -> dict:
     """根据文档ID获得大纲内容，返回标题和观点列表"""
     outline = Outline.get_or_none(Outline.document == document_id)
     return model_to_dict(outline, recurse=False) if outline else None
+
+
+def get_paragraphs_by_ids(
+    para_ids: list[int], pageNo=1, pageSize=10, recurse=True
+) -> dict:
+    """根据段落ids获得段落内容"""
+    print(
+        "para_ids:",
+        para_ids,
+    )
+    paras = (
+        Paragraph.select()
+        .where(Paragraph.id.in_(para_ids))
+        .order_by(Paragraph.document.desc())
+        .paginate(pageNo, pageSize)
+    )
+    print("paras:", paras)
+    return [model_to_dict(para, recurse=recurse) for para in paras] if paras else []
+
+
+def split_to_lines(paragraph_content: str) -> list[str]:
+    """
+    将段落内容拆分为句子列表
+    :param paragraph_content: 段落内容
+    :return: 句子列表
+    """
+    # 如果一段太短, 则直接返回
+    if len(paragraph_content) <= 20:
+        return [paragraph_content]
+    # 句号/问号/叹号/分号就是句子的结束符号
+    lines = re.split(r"[。？?！!；;]", paragraph_content)
+    result_lines = []
+    cursor = -1  # 游标, 指向每段末尾
+
+    for i in range(len(lines)):
+        line = lines[i]
+        if i == len(lines) - 1 and len(line) < 1:
+            break
+        cursor = cursor + 1 + len(line)
+        # 如果句尾不存在, 则不加
+        punctuation = (
+            paragraph_content[cursor] if cursor < len(paragraph_content) else ""
+        )
+        result_lines.append(line + punctuation)
+
+    return result_lines
+
+
+def is_line_contains_words(line: str, word_list: list[str]) -> bool:
+    """
+    判断句子中是否含有所有的关键词
+    :param line: 句子
+    :param word_list: 关键词列表
+    :return: 句子中是否含有所有关键词
+    """
+    for word in word_list:
+        if word not in line:
+            return False
+    return True
+
+
+def filter_inline_paras_by_ids(search_value: str, para_ids: list[int]) -> list:
+    """按照"多关键词确保在句子内部"对结果进行过滤
+
+    Args:
+        search_value (str): 搜索词
+        para_ids (list[int]): 已经搜索到的id列表
+
+    Returns:
+        list: 多关键词在句内的段落id列表
+    """
+    search_words = re.split(r"[ >》]+", search_value)
+    if not search_words or len(search_words) < 2:
+        return para_ids
+    # 获得所有段落
+    paragraph_list = get_paragraphs_by_ids(
+        para_ids, pageNo=1, pageSize=10000, recurse=False
+    )
+    # 句子内部含有关键词的目标段落ID
+    target_para_ids = []
+    for para in paragraph_list:
+        lines = split_to_lines(para["content"])
+        for line in lines:
+            # 如果句子含有全部关键词, 则对应的段落id就放到目标段落ID中
+            if is_line_contains_words(line, search_words):
+                target_para_ids.append(para["id"])
+                break
+    return target_para_ids
+
 
 # -------------------分词相关-------------------
 
@@ -411,19 +499,19 @@ def get_map_from_reversedDb(key: str) -> dict:
         dict: _description_
     """
     json_str = ""
-    print(f"正在从倒排索引中获取key: {key} 的数据")
     # 如果已经存有对应的存储库缓存，且缓存中有那个key，则直接返回
     if key in Reverse_Cache_Map:
-        print(f"倒排索引缓存命中，key: {key}")
         return Reverse_Cache_Map[key]
     else:
         try:
             json_byte_str = reversed_Db.get(key.encode("utf-8"))  # 获取纯json字符串
+            json_byte_str = b"" if json_byte_str is None else json_byte_str
         except CorruptionError as e:
             print(f"未找到key: {key} 的倒排索引数据")
             json_byte_str = b""
         json_str = json_byte_str.decode("utf-8")
         result_json = json_to_map_directly(json_str)
+        print(f"倒排索引结果：{key}->{len(json_str)}")
         # 将结果存入缓存
         Reverse_Cache_Map[key] = result_json
         return result_json
@@ -472,7 +560,16 @@ def search_multi_continue_parts(continue_parts: list[list[str]]) -> dict:
     return init_result_map
 
 
-def searchFullText(search_value: str, min_distance: int) -> dict:
+def search_full_text(search_value: str, min_distance: int) -> dict:
+    """全文检索
+
+    Args:
+        search_value (str): 搜索关键词
+        min_distance (int): 关键词之间的距离
+
+    Returns:
+        dict: 关键词所在的句子id和位置列表Map<number, number[]>
+    """
     search_continuous_parts = split_search_value(search_value)
     # 如果没有搜索词, 则返回为空
     if not search_continuous_parts or len(search_continuous_parts) == 0:
@@ -499,6 +596,7 @@ def searchFullText(search_value: str, min_distance: int) -> dict:
                 delete_keys.append(result_key)
                 continue
             # 如果比较的表中有这个键, 但是如果用户传入了关键词最短距离, 还需要考虑词条距离
+            print(f"min_distance: {min_distance}")
             if min_distance > 0:
                 result_positions = result_sentence_map[result_key]  # 获得关键词位置
                 comp_positions = comp_map[result_key]
@@ -513,11 +611,16 @@ def searchFullText(search_value: str, min_distance: int) -> dict:
                     if len(continue_result_maps) > 2:
                         # 如果满足距离要求, 而且还有另外的词, 则在结果Map的指定段落位置增加第二个词的位置
                         result_sentence_map[result_key] = short_pos_list
-    for k in delete_keys:
-        result_sentence_map.pop(k, None)
+        for k in delete_keys:
+            result_sentence_map.pop(k, None)
+    return result_sentence_map
 
 
 if __name__ == "__main__":
-    print(split_words_for_search("安全形势分析"))
-    # 测试分词函数
-    print(searchFullText("社会公共利益", 0))
+    # print("最终结果：", search_full_text("大数据 综合能力", 0))
+    print(
+        filter_inline_paras_by_ids(
+            "大数据 综合能力",
+            [k for k in search_full_text("大数据 综合能力", 0).keys()],
+        )
+    )

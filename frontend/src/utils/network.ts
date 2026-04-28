@@ -114,3 +114,58 @@ export const getSomeParas = async (paraId: number, lb: number, ub: number) => {
     return []
   }
 }
+
+/**
+ * 
+ * @param searchValue 搜索内容
+ * @param minDistance 不同内容之间的距离
+ * @returns 段落ids
+ */
+export const searchFullText = async (searchValue: string, minDistance = 0) => {
+  const res = await fetchUrl('/api/v1/paragraph/fulltext', {
+    searchValue: searchValue,
+    minDistance: minDistance,
+  })
+  if (res && res.data) {
+    return res.data as number[]
+  } else {
+    message.error(`获取数据失败：${res ? res.message : '未知错误'}`)
+    return []
+  }
+}
+
+/**
+ * 按照确保不同搜索内容在同一句子内部过滤段落ids
+ * @param searchValue 搜索内容
+ * @param minDistance 不同内容之间的距离
+ * @returns 不同内容在同一句话中的段落ids
+ */
+export const filterInLineResult = async (searchValue: string,
+    minDistance: number) => {
+    const res = await fetchUrl('/api/v1/paragraph/inline', {
+        searchValue: searchValue,
+        minDistance: minDistance,
+    })
+    console.log("res:", res);
+    
+    if (res && res.data) {
+        return res.data as number[]
+    } else {
+        message.error(`获取数据失败：${res ? res.message : '未知错误'}`)
+        return []
+    }
+}
+
+export const getParagraphsByIds = async (paraIds: number[], pageNo=1, pageSize=10) => {
+    const res = await fetchUrl('/api/v1/paragraph/ids', {
+        ids: paraIds,
+        pageNo: pageNo,
+        pageSize: pageSize,
+    })
+    if (res && res.data) {
+        return res.data as Paragraph[]
+    } else {
+        message.error(`获取数据失败：${res ? res.message : '未知错误'}`)
+        return []
+    }
+}

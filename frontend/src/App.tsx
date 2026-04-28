@@ -16,6 +16,7 @@ import DocumentsPage from './renderer/pages/documentPage'
 import StructurePage from './renderer/pages/structurePage'
 import WelcomePage from './renderer/pages/welcomePage/WelcomePage'
 import PandaSvg from './renderer/components/PandaSvg'
+import FullTextSearch from './renderer/pages/fullTextSearchPage'
 
 const { Content, Footer, Sider } = Layout
 
@@ -82,6 +83,19 @@ const App: React.FC = () => {
   const addTabByClickMenu = (menuKey: string) => {
     const addKey = Number(tabsItems[tabsItems.length - 1].key) + 1 + ''
     switch (menuKey) {
+      case '全文检索': {
+        setTabsItems([
+          ...tabsItems,
+          {
+            label: '全文检索',
+            children: <FullTextSearch />,
+            key: addKey,
+            closable: true,
+          },
+        ])
+        setActiveKey(addKey)
+        break
+      }
       case '文档检索': {
         setTabsItems([
           ...tabsItems,

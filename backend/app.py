@@ -132,6 +132,47 @@ def query_in_structure():
     })
 
 
+@app.route("/api/v1/paragraph/ids", methods=["POST"])
+def get_paragraphs_by_ids():
+    """进行结构检索，主要是标题和观点
+
+    Args:
+        query_options (dict): 检索项目
+
+    """
+
+    # 获取前端发送的 JSON 数据
+    data = request.get_json()
+    ids_query = data.get("ids", [])  # 拿到标题的检索词
+    pageNo = data.get("pageNo", 1)  # 页码，默认为1
+    pageSize = data.get("pageSize", 10)  # 每页大小，默认为10
+    paras = utils.get_paragraphs_by_ids(
+        para_ids=ids_query, pageNo=pageNo, pageSize=pageSize
+    )
+
+    return jsonify({"status": 200, "message": "获取成功", "data": paras})
+
+
+@app.route("/api/v1/paragraph/inline", methods=["POST"])
+def filter_inline_paras_by_ids():
+    """进行结构检索，主要是标题和观点
+
+    Args:
+        query_options (dict): 检索项目
+
+    """
+
+    # 获取前端发送的 JSON 数据
+    data = request.get_json()
+    search_value = data.get("searchValue")  # 搜索词
+    min_distance = data.get("minDistance", 0)  # 词与词之间的最近距离
+    search_map = utils.search_full_text(search_value, min_distance)
+    raw_ids = [k for k in search_map.keys()]
+    inline_para_ids = utils.filter_inline_paras_by_ids(search_value, raw_ids)
+
+    return jsonify({"status": 200, "message": "获取成功", "data": inline_para_ids})
+
+
 @app.route("/api/v1/paragraph/id", methods=["POST"])
 def get_paragraph_by_id():
     """根据段落ID获得段落内容
@@ -149,7 +190,7 @@ def get_paragraph_by_id():
 
 @app.route("/api/v1/paragraph/query", methods=["POST"])
 def get_some_paras():
-    """根据段落ID获得段落内容
+    """根据段落ID和上下限获得一段范围内的段落内容
 
     Args:
         paragraph_id (int): 文档ID
@@ -161,8 +202,26 @@ def get_some_paras():
     print(f"查询段落，paragraphId={paragraph_id}, lb={lb}, ub={ub}")
     if not paragraph_id:
         return jsonify({"message": "缺少paragraphId"}), 400
-    para = utils.get_some_paras(paragraph_id, lb, ub)
-    return jsonify({"status": 200, "message": "获取成功", "data": para})
+    paras = utils.get_some_paras(paragraph_id, lb, ub)
+    return jsonify({"status": 200, "message": "获取成功", "data": paras})
+
+
+@app.route("/api/v1/paragraph/fulltext", methods=["POST"])
+def search_full_text():
+    """段落进行全文检索
+
+    Args:
+        paragraph_id (int): 文档ID
+    """
+    data = request.get_json()
+    search_value = data.get("searchValue")  # 搜索词
+    min_distance = data.get("minDistance", 0)  # 词与词之间的最近距离
+    print(f"段落页面全文检索，searchValue={search_value}, minDistance={min_distance}")
+    if not search_value or search_value.strip() == "":
+        return jsonify({"status": 200, "message": "缺少搜索关键词", "data": []})
+    paras_map = utils.search_full_text(search_value, min_distance)
+    para_ids = [k for k in paras_map.keys()]
+    return jsonify({"status": 200, "message": "获取成功", "data": para_ids})
 
 
 @app.route("/api/v1/outline/query", methods=["POST"])
@@ -181,4 +240,4 @@ def get_outline_by_documentId():
 
 if __name__ == '__main__':
     # 开启 debug 模式，端口设为 5000
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)

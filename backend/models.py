@@ -91,6 +91,7 @@ class Outline(BaseModel):
         table_name = "outline"
 
 
-db.connect()
-db.create_tables([Document, Paragraph, Structure, Outline], safe=True)
+db.connect()  # 连接数据库
+# 注释创建表代码，如果表是只读则会出错
+# db.create_tables([Document, Paragraph, Structure, Outline], safe=True)
 print(f"数据库连接成功！")

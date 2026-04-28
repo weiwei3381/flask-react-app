@@ -22,29 +22,23 @@ import {
   Input,
 } from 'antd'
 import { AliwangwangOutlined } from '@ant-design/icons'
-import {
-  searchFullText,
-  getPaginationResultData,
-  filterInLineResult,
-  SearchResult,
-  searchTrim,
-} from '../../../utils/search'
-import './search.css'
+import './index.css'
 import ColorDiv from '../../components/ColorDiv'
 import SentenceHighlight from '../../components/SentenceHighlight'
 import SearchHistory from '../../components/SearchHistory'
 import DetailModal from '../../components/DetailModal'
-import useDebounce from '../../hooks'
-import { backToTop, convertDocTitle, unique } from '../../../utils'
+import { backToTop, convertDocTitle, dateToStr, unique } from '../../../utils'
+import {
+  filterInLineResult,
+  getParagraphsByIds,
+  searchFullText,
+} from '../../../utils/network'
 
-const MySearch: React.FC = () => {
+const FullTextSearch: React.FC = () => {
   // 用户搜索词有两种状态，一种是刚输入进去，但是还没有进行提交搜索的文本，也就是输入框中的词，这种状态为“inputValue”
   // 还有一种是用户提交的搜索词，可以是输入进去之后按回车或者点击搜索，也有可能是点击的历史记录，这种搜索词为“searchValue”
   const [inputValue, setInputValue] = useState('') // 输入框内的文本
   const [searchValue, setSearchValue] = useState('') // 用户输入的搜索值
-  // 由于每次修改similarNum都会触发AI搜索，所以这里加一个防抖
-  const [similarNum, setSimilarNum] = useState(50) // AI搜索的返回文件数量，默认为50
-  const debouncedSimilarNum = useDebounce<number>(similarNum, 1000) // 拿到防抖后搜索结果
 
   const [rawParaIds, setRawParaIds] = useState([]) // 使用倒排索引搜索到的初步结果ids
   const [searchResult, setSearchResult] = useState({
@@ -56,15 +50,17 @@ const MySearch: React.FC = () => {
   const [tableLoading, setTableLoading] = useState(false) // 是否显示正在加载
   const [selectParaId, setSelectParaId] = useState(undefined) // 双击选择的段落Id
   const [modalVisible, setModalVisible] = useState(false) // 模态框是否显示
+  // [确保句内]的开关是否可用
   const [switchStatus, setSwitchStatus] = useState({
     isSwitchDisable: true,
     isSwitchChecked: false,
-  }) // [确保句内]的开关是否可用
+  })
   const [loadingTip, setLoadingTip] = useState('正在导入数据') // 导入文字
+  // 默认的页码设置
   const defaultPageOption = {
     pageNo: 1,
-    pageSize: 20,
-  } // 默认的页码设置
+    pageSize: 10,
+  }
 
   const [pageOption, setPageOption] = useState(defaultPageOption) // 页码设置
   const [minDistance, setMinDistance] = useState(0) // 搜索时传入的最近距离
@@ -113,18 +109,18 @@ const MySearch: React.FC = () => {
       key: 'documentName',
       ellipsis: false,
       width: '13%',
-      render: (text: string, item: SearchResult) => {
+      render: (text: string, item) => {
         // 去重后的文档标题列表列表
-        const titleList = unique(searchResultData.map((d) => d.documentName))
+        const titleList = unique(searchResultData.map((d) => d.document.title))
         const index = Math.max(titleList.indexOf(text), 0)
         // 判断名称前后的书名号
-        const docTitle = convertDocTitle(text)
+        const docTitle = convertDocTitle(item.document.title)
 
         return (
           <ColorDiv
             link={item.filepath}
             colorIndex={index}
-            contentList={[docTitle, item.date]}
+            contentList={[docTitle, dateToStr(item.document.date)]}
           />
         )
       },
@@ -142,11 +138,11 @@ const MySearch: React.FC = () => {
     setTableLoading(true) // 开启loading
     // 将搜索情况加入历史
     // setting.set('search_count', setting.get('search_count') + 1)
-    const resultMap = await searchFullText(searchTrim(value), minDistance) // 全文搜索
-    if (value && value.length > 0 && resultMap.size === 0) {
+    // 倒排索引的段落IDs
+    const rawParaIds = await searchFullText(value.trim(), minDistance) // 全文搜索
+    if (value && value.length > 0 && rawParaIds.length === 0) {
       message.warning(`Sorry，关键词【${value}】找不到结果`, 1.5)
     }
-    const rawParaIds = Array.from(resultMap.keys()) // 倒排索引的段落IDs
     setRawParaIds(rawParaIds)
     setTableLoading(false) // 取消loading
   }
@@ -157,7 +153,7 @@ const MySearch: React.FC = () => {
       let paraIds = rawParaIds
       // 如果打开句内共现开关, 则更新paraId
       if (switchStatus.isSwitchChecked) {
-        paraIds = await filterInLineResult(searchValue, paraIds) // 句内段落ID列表
+        paraIds = await filterInLineResult(searchValue, minDistance) // 句内段落ID列表
       }
       setSearchResult({
         total: paraIds.length,
@@ -166,7 +162,7 @@ const MySearch: React.FC = () => {
       // 每次搜索都将页码设为默认值
       setPageOption(defaultPageOption)
       // 直接按照默认值进行检索
-      const paraResults = await getPaginationResultData(
+      const paraResults = await getParagraphsByIds(
         paraIds,
         defaultPageOption.pageNo,
         defaultPageOption.pageSize
@@ -206,7 +202,7 @@ const MySearch: React.FC = () => {
       pageNo: current,
       pageSize: pageSize,
     })
-    const paraResults = await getPaginationResultData(
+    const paraResults = await getParagraphsByIds(
       searchResult.resultParaIdList,
       current,
       pageSize
@@ -218,15 +214,12 @@ const MySearch: React.FC = () => {
   const handleSwitchOn = async () => {
     // 每次搜索都将页码设为默认值开始
     setPageOption(defaultPageOption)
-    const inLineParaIdList = await filterInLineResult(
-      searchValue,
-      searchResult.resultParaIdList
-    ) // 句内段落ID列表
+    const inLineParaIdList = await filterInLineResult(searchValue, minDistance) // 句内段落ID列表
     setSearchResult({
       total: inLineParaIdList.length,
       resultParaIdList: inLineParaIdList,
     })
-    const searchResults = await getPaginationResultData(
+    const searchResults = await getParagraphsByIds(
       inLineParaIdList,
       defaultPageOption.pageNo,
       defaultPageOption.pageSize
@@ -279,11 +272,11 @@ const MySearch: React.FC = () => {
                   onSearch={() => {
                     setPageOption(defaultPageOption) // 搜索词变化时重置页码
                     setSearchValue(inputValue)
+                    handleSearch(inputValue)
                   }}
                   value={inputValue}
                   onChange={(e) => {
                     setInputValue(e?.target?.value)
-                    console.log(inputValue)
                   }}
                 />
               </Space.Compact>
@@ -377,4 +370,4 @@ const MySearch: React.FC = () => {
   )
 }
 
-export default MySearch
+export default FullTextSearch

@@ -1,0 +1,29 @@
+/* 修改表头文字、背景颜色 */
+.ant-table-thead>tr>th {
+    font-weight: 600 !important;
+    text-align: center !important;
+    color: #000000d9 !important;
+}
+
+tbody.ant-table-tbody {
+    height: 56vh;
+}
+
+div.full-search div.ant-row.ant-form-item {
+    margin-bottom: 0px;
+}
+
+div.mysearch-database span.ant-select-selection-item {
+    color: #1890ff;
+    font-weight: bold;
+}
+
+div.full-search thead.ant-table-thead th.ant-table-cell {
+    padding-bottom: 8px;
+    padding-top: 8px;
+}
+
+div.full-search tbody.ant-table-tbody tr.ant-table-row td {
+    padding-bottom: 12px;
+    padding-top: 12px;
+}
