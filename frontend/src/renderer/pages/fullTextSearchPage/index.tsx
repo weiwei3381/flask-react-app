@@ -333,7 +333,7 @@ const FullTextSearch: React.FC = () => {
               // 双击打开详情模态框
               onDoubleClick: () => {
                 setModalVisible(true)
-                setSelectParaId(record.paraId)
+                setSelectParaId(record.id)
               },
             }
           }}

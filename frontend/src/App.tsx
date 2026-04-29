@@ -17,6 +17,7 @@ import StructurePage from './renderer/pages/structurePage'
 import WelcomePage from './renderer/pages/welcomePage/WelcomePage'
 import PandaSvg from './renderer/components/PandaSvg'
 import FullTextSearch from './renderer/pages/fullTextSearchPage'
+import QRToolPage from './renderer/pages/toolsPage/QRToolPage'
 
 const { Content, Footer, Sider } = Layout
 
@@ -115,6 +116,19 @@ const App: React.FC = () => {
           {
             label: '结构搜索',
             children: <StructurePage />,
+            key: addKey,
+            closable: true,
+          },
+        ])
+        setActiveKey(addKey)
+        break
+      }
+      case '二维码': {
+        setTabsItems([
+          ...tabsItems,
+          {
+            label: '二维码',
+            children: <QRToolPage />,
             key: addKey,
             closable: true,
           },

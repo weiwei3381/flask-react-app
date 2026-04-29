@@ -1,0 +1,14 @@
+.my-QRtool .ant-carousel .slick-slider button.slick-arrow {
+    color: #1677ff !important;
+    font-size: large;
+    font-weight: bold !important;
+    opacity: 1 !important;
+}
+
+.my-QRtool .ant-carousel .slick-slider ul.custom-carousel-dots li.slick-active::after {
+    background-color: #1677ff !important;
+}
+
+.my-QRtool .ant-carousel .slick-slider ul.custom-carousel-dots li {
+    background-color: #1677ff2b !important;
+}

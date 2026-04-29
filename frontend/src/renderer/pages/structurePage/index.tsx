@@ -1,35 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useState } from 'react'
-import {
-  AudioOutlined,
-  FileMarkdownTwoTone,
-  FilePdfTwoTone,
-  FileTextTwoTone,
-  FileTwoTone,
-  FileWordTwoTone,
-} from '@ant-design/icons'
-import {
-  Affix,
-  Col,
-  Input,
-  message,
-  Modal,
-  Rate,
-  Row,
-  Select,
-  Space,
-  Spin,
-  Table,
-  Tag,
-  Tooltip,
-} from 'antd'
-import type { GetProps } from 'antd'
+import { Affix, Col, Input, Row, Select, Space, Spin, Table, Tag } from 'antd'
 import SentenceHighlight from '../../components/SentenceHighlight'
 import {
   backToTop,
   convertDocTitle,
   unique,
-  type ResponseData,
   type StructureResult,
 } from '../../../utils'
 import { fetchUrl } from '../../../utils/network'
@@ -39,7 +14,6 @@ import './index.css'
 import LocalStorageManager from '../../../utils/localStorage'
 import SearchHistory from '../../components/SearchHistory'
 
-type SearchProps = GetProps<typeof Input.Search>
 const { Search } = Input
 
 const StructurePage: React.FC = () => {
@@ -375,7 +349,7 @@ const StructurePage: React.FC = () => {
             pageSize: pageOption.pageSize,
           }}
           // 分页跳转的方法
-          onChange={async (pagination, filters, sorter) => {
+          onChange={async (pagination) => {
             const { current, pageSize } = pagination
             handlePaginationChange(current, pageSize)
             // handlerSorterChange(sorter.field, sorter.order);
