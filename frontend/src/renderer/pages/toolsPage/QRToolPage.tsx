@@ -1,9 +1,10 @@
-import { Carousel, Col, Input, QRCode, Row } from 'antd'
+import { Carousel, Col, Input, QRCode, Row, Switch } from 'antd'
 import React, { useEffect, useState } from 'react'
 import './QRToolPage.css'
 
 const QRToolPage: React.FC = () => {
   const [qrValue, setQrValue] = useState('')
+  const [isAutoPlay, setIsAutoPlay] = useState(false)
   const { TextArea } = Input
 
   const splitStringIntoChunks = (str: string, chunkSize = 500): string[] => {
@@ -28,6 +29,11 @@ const QRToolPage: React.FC = () => {
           allowClear
         />
       </Col>
+      <Col span={6} style={{ marginTop: '10px' }}>
+        <span>二维码自动播放：</span>
+        <Switch value={isAutoPlay} onChange={(v) => setIsAutoPlay(v)} />
+      </Col>
+
       <Col
         span={24}
         style={{
@@ -39,7 +45,7 @@ const QRToolPage: React.FC = () => {
         <Carousel
           dotPlacement="bottom"
           autoplaySpeed={5000}
-          autoplay={{ dotDuration: true }}
+          autoplay={isAutoPlay ? { dotDuration: true } : false}
           arrows
           dots={{
             className: 'custom-carousel-dots',
@@ -53,7 +59,7 @@ const QRToolPage: React.FC = () => {
           {splitStringIntoChunks(qrValue).map((chunk, index) => {
             return (
               <div key={index}>
-                <QRCode value={chunk} size={600} />
+                <QRCode value={chunk} size={600} bgColor="white" />
               </div>
             )
           })}
