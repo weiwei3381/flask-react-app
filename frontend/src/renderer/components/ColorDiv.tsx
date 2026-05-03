@@ -4,15 +4,11 @@ import { Tooltip } from 'antd'
 interface ColorDivProp {
   colorIndex: number // 颜色序号
   contentList: string[] // 内容列表, 每个内容单独成行
-  link: string | null // 打开链接
+  url: string | null // 新窗口链接
 }
 
 // 彩色内容的DIV元素, 其中传入不同的序号得到的颜色是一样的
-const ColorDiv: React.FC<ColorDivProp> = ({
-  colorIndex,
-  contentList,
-  link,
-}) => {
+const ColorDiv: React.FC<ColorDivProp> = ({ colorIndex, contentList, url }) => {
   const colorList = [
     '#d0ebff',
     '#c3fae8',
@@ -27,8 +23,8 @@ const ColorDiv: React.FC<ColorDivProp> = ({
   ] // 颜色列表
 
   const index = colorIndex % colorList.length // 求余数
-  const cursor = link ? 'pointer' : 'default'
-  const tipTitle = link ? '双击打开原文件' : ''
+  const cursor = url ? 'pointer' : 'default'
+  const tipTitle = url ? '双击新窗口打开' : ''
 
   return (
     <Tooltip title={tipTitle}>
@@ -44,7 +40,15 @@ const ColorDiv: React.FC<ColorDivProp> = ({
         }}
       >
         {contentList.map((content, i) => (
-          <div style={{ cursor }} key={i}>
+          <div
+            style={{ cursor }}
+            key={i} // 为了不影响性能，只在双击时才检测文件是否存在
+            onDoubleClick={(evt) => {
+              evt.stopPropagation() // 如果传入链接, 则阻止冒泡，否则会访问父元素方法导致打开详情页
+              // 可以打开内部路由
+              window.open(url, '_blank', 'noopener,noreferrer')
+            }}
+          >
             {content}
           </div>
         ))}

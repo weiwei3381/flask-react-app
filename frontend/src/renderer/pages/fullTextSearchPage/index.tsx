@@ -118,7 +118,7 @@ const FullTextSearch: React.FC = () => {
 
         return (
           <ColorDiv
-            link={item.filepath}
+            url={`/article/${item.id}?searchValue=${searchValue}`}
             colorIndex={index}
             contentList={[docTitle, dateToStr(item.document.date)]}
           />

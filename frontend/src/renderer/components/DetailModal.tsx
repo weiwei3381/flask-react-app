@@ -140,10 +140,6 @@ const DetailModal: React.FC<SearchModalProps> = ({
         const lb = para.order - 1 < 0 ? 0 : para.order // 下限
         const ub = para.order + 1 > maxPage ? maxPage : para.order + 2 // 上限
         setCurrentPos([lb, ub])
-        setDocInfo({
-          title: convertDocTitle(document.title),
-          date: dateToStr(document.date),
-        })
         const continuesParas = await getSomeParas(jumpParaId, lb, ub)
         setParas(continuesParas)
         setIsloading(false)

@@ -154,13 +154,13 @@ const StructurePage: React.FC = () => {
         // 去重后的文档标题列表列表
         const titleList = unique(searchResult.map((d) => d.documentName))
         const colorIndex = Math.max(titleList.indexOf(text), 0)
-        console.log(text)
+        console.log(item)
         // 名称有可能是纯字符串，需要在名称前后动态增加书名号
         const docTitle = convertDocTitle(text)
         return (
           <ColorDiv
             key={docTitle}
-            link={item.filepath}
+            url={`/article/${item.paragraph}?searchValue=${searchValue}`}
             colorIndex={colorIndex}
             contentList={[docTitle, item.date]}
           />
