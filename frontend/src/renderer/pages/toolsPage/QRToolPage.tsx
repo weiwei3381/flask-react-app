@@ -1,5 +1,5 @@
 import { Carousel, Col, Input, QRCode, Row, Switch } from 'antd'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import './QRToolPage.css'
 
 const QRToolPage: React.FC = () => {
