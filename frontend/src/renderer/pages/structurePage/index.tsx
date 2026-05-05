@@ -192,7 +192,7 @@ const StructurePage: React.FC = () => {
         return (
           <ColorDiv
             key={docTitle}
-            url={`/article/${item.paragraph}?searchValue=${searchValue}`}
+            url={`/#/article/${item.paragraph}?searchValue=${searchValue}`}
             colorIndex={colorIndex}
             contentList={[docTitle, item.date]}
             doubleClickCallback={() => {

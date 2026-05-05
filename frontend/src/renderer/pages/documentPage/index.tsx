@@ -152,7 +152,7 @@ const DocumentsPage: React.FC = () => {
                   evt.stopPropagation() // 如果传入链接, 则阻止冒泡，否则会访问父元素方法导致打开详情页
                   const firstPara = await getOneParaByDocumentId(record.id)
                   window.open(
-                    `/article/${firstPara.id}?searchValue=${searchValue}`,
+                    `/#/article/${firstPara.id}?searchValue=${searchValue}`,
                     '_blank',
                     'noopener,noreferrer'
                   )
