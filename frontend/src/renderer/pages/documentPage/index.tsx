@@ -128,12 +128,21 @@ const DocumentsPage: React.FC = () => {
         }
 
         if (typeIconMap[text]) {
-          const link = item.filePath
-          const tipTitle = link ? '双击打开原文件' : ''
-          const cursor = link ? 'pointer' : 'default'
+          const tipTitle = '双击新窗口打开'
           return (
             <Tooltip title={tipTitle}>
-              <div style={{ cursor }}>
+              <div
+                style={{ cursor: 'pointer' }}
+                onDoubleClick={async (evt) => {
+                  evt.stopPropagation() // 如果传入链接, 则阻止冒泡，否则会访问父元素方法导致打开详情页
+                  const firstPara = await getOneParaByDocumentId(item.id)
+                  window.open(
+                    `/article/${firstPara.id}?searchValue=${searchValue}`,
+                    '_blank',
+                    'noopener,noreferrer'
+                  )
+                }}
+              >
                 {typeIconMap[text]}
                 {text}
               </div>
