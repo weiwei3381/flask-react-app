@@ -1,10 +1,11 @@
-import { Button, Col, Divider, message, Row, Spin } from 'antd'
+import { Button, Col, Divider, message, Popconfirm, Row, Spin } from 'antd'
 import type React from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useTitle } from '../../hooks'
 import { useEffect, useState } from 'react'
 import { convertDocTitle, dateToStr, type OutlineType } from '../../../utils'
 import {
+  getAllParasByDocumentId,
   getOutlineJsonByDocumentId,
   getParagraphById,
   getSomeParas,
@@ -25,6 +26,8 @@ const ArticlePage: React.FC = () => {
   const [docInfo, setDocInfo] = useState({
     title: '文档详情',
     date: '2022-01-01',
+    docId: null, // 当前文档id
+    paraLength: 0, // 当前文档段落数
   }) // 模态框标题为文档标题
   const [currentPos, setCurrentPos] = useState([]) // 当前翻页的位置
   const [paras, setParas] = useState([]) // 显示的页面
@@ -69,6 +72,16 @@ const ArticlePage: React.FC = () => {
     setCurrentPos([lb, ub + 10])
   }
 
+  // 处理加载全文按钮
+  const clickLoadFullTextBtn = async () => {
+    if (docInfo?.docId) {
+      // 拿到所有页面后，设置段落并设置当前位置
+      const paras = await getAllParasByDocumentId(docInfo.docId)
+      setParas(paras)
+      setCurrentPos([0, docInfo.paraLength - 1])
+    }
+  }
+
   useEffect(() => {
     const getContinuesParas = async () => {
       // 存在paraId说明已经双击结果了
@@ -80,6 +93,8 @@ const ArticlePage: React.FC = () => {
         setDocInfo({
           title: convertDocTitle(document.title),
           date: dateToStr(document.date),
+          docId: para.document.id,
+          paraLength: para.document.paraLength,
         })
         // 拿到大纲
         const outlineJson = await getOutlineJsonByDocumentId(para.document.id)
@@ -131,6 +146,14 @@ const ArticlePage: React.FC = () => {
         }}
       >
         {`${docInfo.title}•${docInfo.date}`}
+        <Popconfirm
+          title={`全文共计${docInfo.paraLength}段, 是否加载全文?`}
+          onConfirm={clickLoadFullTextBtn}
+        >
+          <Button type="link" style={{ marginLeft: '1em' }}>
+            加载全文
+          </Button>
+        </Popconfirm>
       </h2>
 
       <Spin spinning={isloading} description="正在加载">
