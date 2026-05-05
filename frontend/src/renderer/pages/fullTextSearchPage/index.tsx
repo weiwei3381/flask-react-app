@@ -20,6 +20,7 @@ import {
   Slider,
   Space,
   Input,
+  Badge,
 } from 'antd'
 import { AliwangwangOutlined } from '@ant-design/icons'
 import './index.css'
@@ -33,6 +34,7 @@ import {
   getParagraphsByIds,
   searchFullText,
 } from '../../../utils/network'
+import LocalStorageManager from '../../../utils/localStorage'
 
 const FullTextSearch: React.FC = () => {
   // 用户搜索词有两种状态，一种是刚输入进去，但是还没有进行提交搜索的文本，也就是输入框中的词，这种状态为“inputValue”
@@ -61,6 +63,9 @@ const FullTextSearch: React.FC = () => {
     pageNo: 1,
     pageSize: 10,
   }
+  const [viewDetailIds, setViewDetailIds] = useState<number[]>(
+    LocalStorageManager.getViewDetailIds('fullTextPage')
+  ) // 已经查看详情的文档id列表
 
   const [pageOption, setPageOption] = useState(defaultPageOption) // 页码设置
   const [minDistance, setMinDistance] = useState(0) // 搜索时传入的最近距离
@@ -87,19 +92,27 @@ const FullTextSearch: React.FC = () => {
       key: 'content',
       ellipsis: false,
       width: '73%',
-      render: (text) => {
+      render: (text, record) => {
         return (
-          <SentenceHighlight
-            paragraph={text}
-            highlightKeys={searchValue.split(/[ >》]+/g)}
-            // highlightKeys={searchValue.split(/[ >》]+/g)}
-            isSentenceHighlight={switchStatus.isSwitchChecked}
-            highlightStyle={{
-              sentenceBackgroundColor: '#ffec99',
-              wordColor: 'red',
-            }}
-            isDifferentColor={true}
-          />
+          <>
+            {viewDetailIds.includes(record.id) && (
+              <>
+                <Badge status="success" />
+                &nbsp;
+              </>
+            )}{' '}
+            <SentenceHighlight
+              paragraph={text}
+              highlightKeys={searchValue.split(/[ >》]+/g)}
+              // highlightKeys={searchValue.split(/[ >》]+/g)}
+              isSentenceHighlight={switchStatus.isSwitchChecked}
+              highlightStyle={{
+                sentenceBackgroundColor: '#ffec99',
+                wordColor: 'red',
+              }}
+              isDifferentColor={true}
+            />
+          </>
         )
       },
     },
@@ -121,6 +134,11 @@ const FullTextSearch: React.FC = () => {
             url={`/article/${item.id}?searchValue=${searchValue}`}
             colorIndex={index}
             contentList={[docTitle, dateToStr(item.document.date)]}
+            doubleClickCallback={() => {
+              // 将打开详情的id加入本地存储
+              LocalStorageManager.addViewDetailId('fullTextPage', item.id)
+              setViewDetailIds([...viewDetailIds, item.id])
+            }}
           />
         )
       },
@@ -334,6 +352,9 @@ const FullTextSearch: React.FC = () => {
               onDoubleClick: () => {
                 setModalVisible(true)
                 setSelectParaId(record.id)
+                // 将打开详情的id加入本地存储
+                LocalStorageManager.addViewDetailId('fullTextPage', record.id)
+                setViewDetailIds([...viewDetailIds, record.id])
               },
             }
           }}

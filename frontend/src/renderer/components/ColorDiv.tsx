@@ -5,10 +5,16 @@ interface ColorDivProp {
   colorIndex: number // 颜色序号
   contentList: string[] // 内容列表, 每个内容单独成行
   url: string | null // 新窗口链接
+  doubleClickCallback?: () => void // 双击事件回调函数, 如果传入链接则优先使用链接事件
 }
 
 // 彩色内容的DIV元素, 其中传入不同的序号得到的颜色是一样的
-const ColorDiv: React.FC<ColorDivProp> = ({ colorIndex, contentList, url }) => {
+const ColorDiv: React.FC<ColorDivProp> = ({
+  colorIndex,
+  contentList,
+  url,
+  doubleClickCallback,
+}) => {
   const colorList = [
     '#d0ebff',
     '#c3fae8',
@@ -47,6 +53,7 @@ const ColorDiv: React.FC<ColorDivProp> = ({ colorIndex, contentList, url }) => {
               evt.stopPropagation() // 如果传入链接, 则阻止冒泡，否则会访问父元素方法导致打开详情页
               // 可以打开内部路由
               window.open(url, '_blank', 'noopener,noreferrer')
+              doubleClickCallback()
             }}
           >
             {content}

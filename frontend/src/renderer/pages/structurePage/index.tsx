@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from 'react'
-import { Affix, Col, Input, Row, Select, Space, Spin, Table, Tag } from 'antd'
+import {
+  Affix,
+  Badge,
+  Col,
+  Input,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag,
+} from 'antd'
 import SentenceHighlight from '../../components/SentenceHighlight'
 import {
   backToTop,
@@ -30,6 +41,9 @@ const StructurePage: React.FC = () => {
   const [modalLoading, setModalLoading] = useState(true) // 模态框是否显示加载中
   const [selectParaId, setSelectParaId] = useState(null) // 双击的标题首段id
   const [tableLoading, setTableLoading] = useState(false) // 是否显示正在加载
+  const [viewDetailIds, setViewDetailIds] = useState<number[]>(
+    LocalStorageManager.getViewDetailIds('structurePage')
+  ) // 已经查看详情的文档id列表
 
   // 普通搜索的条件
   const [searchCondition, setSearchCondition] = useState<{
@@ -106,22 +120,40 @@ const StructurePage: React.FC = () => {
       key: 'title',
       ellipsis: false,
       width: '15%',
-      render: (text) => {
+      render: (text, record) => {
         if (searchValue) {
           return (
-            <SentenceHighlight
-              paragraph={text}
-              highlightKeys={[...searchValue.split(/\s+/g), '/']}
-              isSentenceHighlight={false}
-              highlightStyle={{
-                sentenceBackgroundColor: '#ffec99',
-                wordColor: 'red',
-              }}
-              isDifferentColor={false}
-            />
+            <>
+              {viewDetailIds.includes(record.id) && (
+                <>
+                  <Badge status="success" />
+                  &nbsp;
+                </>
+              )}
+              <SentenceHighlight
+                paragraph={text}
+                highlightKeys={[...searchValue.split(/\s+/g), '/']}
+                isSentenceHighlight={false}
+                highlightStyle={{
+                  sentenceBackgroundColor: '#ffec99',
+                  wordColor: 'red',
+                }}
+                isDifferentColor={false}
+              />
+            </>
           )
         }
-        return text
+        return (
+          <span>
+            {viewDetailIds.includes(record.id) && (
+              <>
+                <Badge status="success" />
+                &nbsp;
+              </>
+            )}
+            {text}
+          </span>
+        )
       },
     },
     {
@@ -163,6 +195,11 @@ const StructurePage: React.FC = () => {
             url={`/article/${item.paragraph}?searchValue=${searchValue}`}
             colorIndex={colorIndex}
             contentList={[docTitle, item.date]}
+            doubleClickCallback={() => {
+              // 将打开详情的id加入本地存储
+              LocalStorageManager.addViewDetailId('structurePage', item.id)
+              setViewDetailIds([...viewDetailIds, item.id])
+            }}
           />
         )
       },
@@ -321,7 +358,10 @@ const StructurePage: React.FC = () => {
           onRow={(record) => {
             return {
               onDoubleClick: async () => {
-                console.log(record)
+                // 将打开详情的id加入本地存储
+                LocalStorageManager.addViewDetailId('structurePage', record.id)
+                setViewDetailIds([...viewDetailIds, record.id])
+                // 显示模态框
                 setModalVisible(true)
                 setModalLoading(true)
                 //   let firstPara: Paragraph = null; // 首段

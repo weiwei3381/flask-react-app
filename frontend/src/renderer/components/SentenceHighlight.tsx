@@ -73,9 +73,9 @@ const SentenceHighlight: React.FC<SentenceHighlightProps> = ({
   };
 
   return (
-    <div>
+    <span>
       {sentences.map((sentence, index) => {
-        const formatTexts = toFormatTexts(highlightKeys, sentence);
+        const formatTexts = toFormatTexts(highlightKeys, sentence)
         if (isSentenceHighlight) {
           // 如果句子内部含有所有的关键词, 则对那句话打上黄底, 然后用红色加粗
           if (isLineContainsWords(sentence, highlightKeys)) {
@@ -89,15 +89,15 @@ const SentenceHighlight: React.FC<SentenceHighlightProps> = ({
               >
                 {formatTexts.map(highlightFormatText)}
               </span>
-            );
+            )
           }
           // 如果句子内部不包含关键词, 直接返回高亮文本即可
-          return formatTexts.map(highlightFormatText);
+          return formatTexts.map(highlightFormatText)
         }
-        return formatTexts.map(highlightFormatText);
+        return formatTexts.map(highlightFormatText)
       })}
-    </div>
-  );
+    </span>
+  )
 };
 
 export default SentenceHighlight;

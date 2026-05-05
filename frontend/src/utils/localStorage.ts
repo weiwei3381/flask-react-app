@@ -16,6 +16,7 @@ export type LocalStorageKeys =
   | 'searchCount' // 搜索次数
   | 'searchHistoryValues' // 搜索历史的具体值
   | 'searchDateAndCount' // 搜索日期和次数的记录
+  | 'viewDetailIds' // 双击查看详情的id，如果是文档页面则记录文档id，其余记录段落id
 
 class LocalStorageManager {
   /**
@@ -145,6 +146,26 @@ class LocalStorageManager {
   static addSearchCount() {
     const currentCount = this.getNameSpaceItem('welcomePage', 'searchCount', 0)
     this.setNameSpaceItem('welcomePage', 'searchCount', currentCount + 1)
+  }
+
+  // 增加查看详情的id，每次调用时会将对应命名空间下的 viewDetailIds 键的值增加一个新的 id
+  static addViewDetailId(nameSpace: LocalNameSpaceKeys, id: number) {
+    const currentIds = this.getNameSpaceItem(
+      nameSpace,
+      'viewDetailIds',
+      []
+    ) as number[]
+    if (!currentIds.includes(id)) {
+      if (currentIds.length > 500) {
+        currentIds.shift() // 如果超过500个id，则删除最早的一个
+      }
+      currentIds.push(id)
+      this.setNameSpaceItem(nameSpace, 'viewDetailIds', currentIds)
+    }
+  }
+
+  static getViewDetailIds(nameSpace: LocalNameSpaceKeys): number[] {
+    return this.getNameSpaceItem(nameSpace, 'viewDetailIds', []) as number[]
   }
 }
 
