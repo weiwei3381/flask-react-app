@@ -18,6 +18,7 @@ import WelcomePage from './renderer/pages/welcomePage/WelcomePage'
 import PandaSvg from './renderer/components/PandaSvg'
 import FullTextSearch from './renderer/pages/fullTextSearchPage'
 import QRToolPage from './renderer/pages/toolsPage/QRToolPage'
+import PdfToolPage from './renderer/pages/toolsPage/PdfToolPage'
 
 const { Content, Footer, Sider } = Layout
 
@@ -129,6 +130,19 @@ const App: React.FC = () => {
           {
             label: '二维码',
             children: <QRToolPage />,
+            key: addKey,
+            closable: true,
+          },
+        ])
+        setActiveKey(addKey)
+        break
+      }
+      case 'pdf工具': {
+        setTabsItems([
+          ...tabsItems,
+          {
+            label: 'pdf工具',
+            children: <PdfToolPage />,
             key: addKey,
             closable: true,
           },
