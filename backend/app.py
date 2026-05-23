@@ -1,13 +1,64 @@
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, send_from_directory
+from werkzeug.utils import secure_filename
 import utils
 from flask_cors import CORS
 
 app = Flask(__name__)
+# 允许跨域访问
 CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173','http://localhost:8080', 'http://127.0.0.1:8080'])
+
+# 配置上传文件夹
+UPLOAD_FOLDER = "uploads"
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 @app.route('/')
 def index():
     return "后端服务正在运行..."
+
+
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    if "file" not in request.files:
+        return jsonify({"status": "error", "message": "没有文件部分"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"status": "error", "message": "未选择文件"}), 400
+
+    if file:
+        # 确保原始文件名安全
+        original_filename = secure_filename(file.filename)
+        # 在这里更换新的文件名 (例如加上前缀或完全改名)
+        new_filename = "renamed_" + original_filename
+
+        # 保存文件（使用新文件名）
+        save_path = os.path.join(app.config["UPLOAD_FOLDER"], new_filename)
+        file.save(save_path)
+
+        return jsonify(
+            {
+                "status": "success",
+                "message": "文件上传并重命名成功",
+                "new_filename": new_filename,
+            }
+        )
+
+
+@app.route("/download", methods=["GET"])
+def download_file():
+    # 这里假设下载刚才上传并重命名的文件
+    # 实际业务中，你可以通过 request.args.get('filename') 动态获取要下载的文件名
+    filename_to_download = "renamed_example.txt"
+
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        filename_to_download,
+        as_attachment=True,  # 设置为 True 强制作为附件下载
+    )
+
 
 @app.route('/api/v1/greet', methods=['POST'])
 def greet():
