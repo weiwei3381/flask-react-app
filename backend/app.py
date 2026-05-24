@@ -8,31 +8,37 @@ app = Flask(__name__)
 # 允许跨域访问
 CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173','http://localhost:8080', 'http://127.0.0.1:8080'])
 
-# 配置上传文件夹
-UPLOAD_FOLDER = "uploads"
+# 配置上传文件夹, 需要确保app.py所在目录和uploads文件夹所在目录相同
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads') 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+print(f"上传文件夹路径: {app.config['UPLOAD_FOLDER']}")
 
 @app.route('/')
 def index():
     return "后端服务正在运行..."
 
 
-@app.route("/upload", methods=["POST"])
+@app.route("/api/v1/upload", methods=["POST"])
 def upload_file():
     if "file" not in request.files:
-        return jsonify({"status": "error", "message": "没有文件部分"}), 400
+        return jsonify({"status": "error", "message": "没有文件部分"})
 
     file = request.files["file"]
     if file.filename == "":
-        return jsonify({"status": "error", "message": "未选择文件"}), 400
+        return jsonify({"status": "error", "message": "未选择文件"})
 
-    if file:
+    if file and file.filename:
         # 确保原始文件名安全
-        original_filename = secure_filename(file.filename)
+        # original_filename = secure_filename(file.filename)
+        # 获得文件扩展名，然后使用16位随机字符添加
+        file_extension = os.path.splitext(file.filename)[1]
+        random_string = os.urandom(8).hex()  # 生成16位随机字符串
+        
+        print(f"接收到文件: {file.filename}")
         # 在这里更换新的文件名 (例如加上前缀或完全改名)
-        new_filename = "renamed_" + original_filename
+        new_filename = "renamed_" + random_string + file_extension
 
         # 保存文件（使用新文件名）
         save_path = os.path.join(app.config["UPLOAD_FOLDER"], new_filename)
@@ -47,7 +53,7 @@ def upload_file():
         )
 
 
-@app.route("/download", methods=["GET"])
+@app.route("/api/v1/download", methods=["GET"])
 def download_file():
     # 这里假设下载刚才上传并重命名的文件
     # 实际业务中，你可以通过 request.args.get('filename') 动态获取要下载的文件名
@@ -58,6 +64,11 @@ def download_file():
         filename_to_download,
         as_attachment=True,  # 设置为 True 强制作为附件下载
     )
+    
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    # 安全地从指定目录发送文件
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
 @app.route('/api/v1/greet', methods=['POST'])
@@ -291,4 +302,4 @@ def get_outline_by_documentId():
 
 if __name__ == '__main__':
     # 开启 debug 模式，端口设为 5000
-    app.run(debug=False, port=5000)
+    app.run(debug=True, port=5000)

@@ -1,0 +1,27 @@
+/* 缩略图外层容器 */
+.thumbnail-container {
+  display: grid;
+  /* 自动填充，每列最小宽度为 180px（包含缩略图和间距），最大占满剩余空间 */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px; /* 缩略图之间的间距 */
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto; /* 内容过多时出现滚动条 */
+}
+
+/* 单个缩略图项 */
+.thumbnail-item {
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+/* 选中状态的样式 */
+.thumbnail-item.selected {
+  border-color: #1890ff; /* 蓝色边框 */
+  background-color: #e6f7ff; /* 浅蓝背景 */
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}

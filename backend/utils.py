@@ -7,7 +7,7 @@
 @Desc    :   数据库工具函数
 '''
 
-import jieba, plyvel, re, json, copy
+import jieba, plyvel, re, json, copy, os
 from plyvel import CorruptionError, IOError
 from models import Document, Paragraph, Structure, Outline
 from playhouse.shortcuts import model_to_dict
@@ -19,10 +19,13 @@ cache = {
 }
 
 Reverse_Cache_Map = {}
+# 倒排索引数据库文件夹路径, 需要确保当前运行文件utils.py所在目录和倒排索引数据库所在目录相同
+REVERSE_FOLDER = UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data') 
+print(f"倒排索引数据库路径: {REVERSE_FOLDER}")
 
 # 全文倒排索引
 try:
-    reversed_Db = plyvel.DB("./data", create_if_missing=True)
+    reversed_Db = plyvel.DB(REVERSE_FOLDER, create_if_missing=True)
 except IOError as e:
     print("无法打开倒排索引数据库，可能是数据库文件损坏或权限问题")
     reversed_Db = None
