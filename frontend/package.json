@@ -13,6 +13,7 @@
     "@ant-design/icons": "^6.1.1",
     "antd": "^6.3.6",
     "copy-to-clipboard": "^3.3.3",
+    "core-js": "^3.49.0",
     "echarts": "^6.0.0",
     "moment": "^2.30.1",
     "pdfjs-dist": "^5.4.296",
