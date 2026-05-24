@@ -1,7 +1,7 @@
 import { message } from "antd";
 import type { Document, Outline, OutlineType, Paragraph, ResponseData } from '.'
 
-const BASE_URL = 'http://127.0.0.1:5000' // 后端API的基础URL
+export const BASE_URL = 'http://127.0.0.1:5000' // 后端API的基础URL
 
 export const fetchUrl = async (url, payload, method = 'POST') => {
   let res: ResponseData = null
@@ -21,6 +21,39 @@ export const fetchUrl = async (url, payload, method = 'POST') => {
   }
 
   return res
+}
+
+/**
+ * 下载文件
+ * @param url 下载文件的路径
+ * @param payload 传递的载荷，dict格式
+ * @param outputFile 保存的文件名，例如“a.txt”，默认为'file.pdf'
+ * @param method http方法，默认为“POST”
+ */
+export const fetchFile = async (url: string, payload, outputFile = 'file.pdf', method = 'POST') => {
+  try {
+    const response = await fetch(BASE_URL + url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    // 将响应转换为 blob 对象
+    const blob = await response.blob()
+    // 创建一个临时的 a 标签触发下载
+    const tempUrl = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.style.display = 'none'
+    a.href = tempUrl
+    a.download = outputFile // 下载时保存在本地的文件名
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(tempUrl)
+  } catch (error) {
+    message.error(`获取数据出错：${error}`)
+  }
 }
 
 /**

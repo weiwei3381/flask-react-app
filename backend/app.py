@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-import utils
+import utils, pdf_utils
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -23,11 +23,11 @@ def index():
 @app.route("/api/v1/upload", methods=["POST"])
 def upload_file():
     if "file" not in request.files:
-        return jsonify({"status": "error", "message": "没有文件部分"})
+        return jsonify({"message": "缺少文件部分"}), 400
 
     file = request.files["file"]
     if file.filename == "":
-        return jsonify({"status": "error", "message": "未选择文件"})
+        return jsonify({"message": "未选择文件"}), 400
 
     if file and file.filename:
         # 确保原始文件名安全
@@ -35,20 +35,17 @@ def upload_file():
         # 获得文件扩展名，然后使用16位随机字符添加
         file_extension = os.path.splitext(file.filename)[1]
         random_string = os.urandom(8).hex()  # 生成16位随机字符串
-        
-        print(f"接收到文件: {file.filename}")
-        # 在这里更换新的文件名 (例如加上前缀或完全改名)
-        new_filename = "renamed_" + random_string + file_extension
-
-        # 保存文件（使用新文件名）
+        # 将文件名随机化
+        new_filename = random_string + file_extension
+        # 使用新文件名保存文件
         save_path = os.path.join(app.config["UPLOAD_FOLDER"], new_filename)
         file.save(save_path)
 
         return jsonify(
             {
-                "status": "success",
-                "message": "文件上传并重命名成功",
-                "new_filename": new_filename,
+                "status": 200,
+                "message": "上传成功",
+                "data": {"filename": new_filename},
             }
         )
 
@@ -64,7 +61,26 @@ def download_file():
         filename_to_download,
         as_attachment=True,  # 设置为 True 强制作为附件下载
     )
-    
+
+
+@app.route("/api/v1/pdf/extract", methods=["POST"])
+def extract_page():
+    # 获取前端发送的 JSON 数据
+    data = request.get_json()
+    filename = data.get("filename", "")  # 拿到标题的检索词
+    page_numbers = data.get("pageNumbers", [])  # 页码，默认为1
+    extract_filename = os.urandom(8).hex() + ".pdf"
+    output_pdf = os.path.join(app.config["UPLOAD_FOLDER"], extract_filename)
+    input_pdf = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    if filename and os.path.isfile(input_pdf):
+        pdf_utils.extract_pages_to_pdf(input_pdf, output_pdf, page_numbers)
+        return send_from_directory(
+            app.config["UPLOAD_FOLDER"],
+            extract_filename,
+            as_attachment=True,  # 设置为 True 强制作为附件下载
+        )
+
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     # 安全地从指定目录发送文件
