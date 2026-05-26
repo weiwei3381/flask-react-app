@@ -54,11 +54,23 @@
   border-radius: 8px;
   overflow: hidden;
   background: #fafafa;
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, opacity 0.2s;
+  cursor: grab;
+}
+
+.image-preview-item:active {
+  cursor: grabbing;
 }
 
 .image-preview-item:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* 拖拽中的卡片 */
+.image-preview-item.dragging {
+  opacity: 0.5;
+  border-style: dashed;
+  border-color: #1890ff;
 }
 
 /* 序号角标 */

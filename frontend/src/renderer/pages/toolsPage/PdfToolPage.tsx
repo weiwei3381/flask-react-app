@@ -24,6 +24,7 @@ const PdfToolPage: React.FC = () => {
   const [imageFiles, setImageFiles] = useState<
     { uid: string; name: string; filename: string }[]
   >([])
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   // ==================== PDF操作处理函数 ====================
 
@@ -66,6 +67,29 @@ const PdfToolPage: React.FC = () => {
   // 移除单张已上传的图片
   const handleRemoveImage = (uid: string) => {
     setImageFiles((prev) => prev.filter((f) => f.uid !== uid))
+  }
+
+  // ==================== 图片拖拽排序处理函数 ====================
+
+  const handleDragStart = (index: number) => {
+    setDragIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    if (dragIndex === null || dragIndex === index) return
+    // 重新排列图片顺序
+    setImageFiles((prev) => {
+      const newList = [...prev]
+      const [draggedItem] = newList.splice(dragIndex, 1)
+      newList.splice(index, 0, draggedItem)
+      return newList
+    })
+    setDragIndex(index)
+  }
+
+  const handleDragEnd = () => {
+    setDragIndex(null)
   }
 
   // ==================== PDF上传配置 ====================
@@ -209,13 +233,20 @@ const PdfToolPage: React.FC = () => {
           {/* 图片预览区 */}
           {imageFiles.length > 0 && (
             <Card
-              title={`已上传 ${imageFiles.length} 张图片（按上传顺序排列）`}
+              title={`已上传 ${imageFiles.length} 张图片（拖动可调整顺序）`}
               size="small"
               style={{ marginBottom: 16 }}
             >
               <div className="image-preview-grid">
                 {imageFiles.map((file, index) => (
-                  <div key={file.uid} className="image-preview-item">
+                  <div
+                    key={file.uid}
+                    className={`image-preview-item ${dragIndex === index ? 'dragging' : ''}`}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragEnd={handleDragEnd}
+                  >
                     <div className="image-preview-index">{index + 1}</div>
                     <img
                       src={`${BASE_URL}/uploads/${file.filename}`}
