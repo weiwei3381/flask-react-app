@@ -154,6 +154,39 @@ def merge_images():
     )
 
 
+@app.route("/api/v1/pdf/insert-blank", methods=["POST"])
+def insert_blank():
+    """在PDF指定页面的前面或后面插入空白页，返回新PDF文件名"""
+    data = request.get_json()
+    filename = data.get("filename", "")  # 源PDF文件名
+    page_number = data.get("pageNumber", 0)  # 参考页码（1-indexed）
+    position = data.get("position", "after")  # "before" 或 "after"
+
+    input_pdf = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    if not filename or not os.path.isfile(input_pdf):
+        return jsonify({"message": "文件不存在"}), 400
+
+    # 计算插入位置索引（0-indexed）
+    # before: 在 page_number 之前插入，即 insert_at = page_number - 1
+    # after:  在 page_number 之后插入，即 insert_at = page_number
+    if position == "before":
+        insert_at = page_number - 1
+    else:
+        insert_at = page_number
+
+    new_filename = os.urandom(8).hex() + ".pdf"
+    output_pdf = os.path.join(app.config["UPLOAD_FOLDER"], new_filename)
+
+    # 插入空白页（自动匹配相邻页面尺寸）
+    pdf_utils.insert_blank_page(input_pdf, output_pdf, insert_at)
+
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        new_filename,
+        as_attachment=True,
+    )
+
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     # 安全地从指定目录发送文件

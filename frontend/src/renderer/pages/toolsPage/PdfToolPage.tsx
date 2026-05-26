@@ -21,9 +21,9 @@ const PdfToolPage: React.FC = () => {
   const [pdfInfo, setPdfInfo] = useState<{ name: string; filename: string } | null>(null)
 
   // ==================== 图片转PDF相关状态 ====================
-  const [imageFiles, setImageFiles] = useState<
-    { uid: string; name: string; filename: string }[]
-  >([])
+  const [imageFiles, setImageFiles] = useState<{ uid: string; name: string; filename: string }[]>(
+    []
+  )
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   // ==================== PDF操作处理函数 ====================
@@ -48,6 +48,21 @@ const PdfToolPage: React.FC = () => {
     )
   }
 
+  // 在选中页面之前或之后插入空白页，生成新PDF直接下载
+  const handleInsertBlankPage = async (position: 'before' | 'after') => {
+    if (!pdfInfo || selectedPages.length !== 1) return
+    const pageNumber = selectedPages[0]
+    await fetchFile(
+      '/api/v1/pdf/insert-blank',
+      {
+        filename: pdfInfo.filename,
+        pageNumber,
+        position,
+      },
+      `blank_insert_${position}_p${pageNumber}.pdf`
+    )
+  }
+
   // ==================== 图片转PDF处理函数 ====================
 
   // 处理图片合并为PDF
@@ -57,11 +72,7 @@ const PdfToolPage: React.FC = () => {
       return
     }
     const filenames = imageFiles.map((f) => f.filename)
-    await fetchFile(
-      '/api/v1/pdf/merge-images',
-      { filenames },
-      'merged_images.pdf'
-    )
+    await fetchFile('/api/v1/pdf/merge-images', { filenames }, 'merged_images.pdf')
   }
 
   // 移除单张已上传的图片
@@ -188,7 +199,11 @@ const PdfToolPage: React.FC = () => {
 
           {/* 预览当前PDF的缩略图 */}
           {pdfInfo && (
-            <Card title="选择要操作的页面（点击选中/取消）" size="small" style={{ marginBottom: 16 }}>
+            <Card
+              title="选择要操作的页面（点击选中/取消）"
+              size="small"
+              style={{ marginBottom: 16 }}
+            >
               <PDFThumbnailSelector
                 selectPagesCallback={setSelectedPages}
                 pdfUrl={`${BASE_URL}/uploads/${pdfInfo.filename}`}
@@ -207,6 +222,14 @@ const PdfToolPage: React.FC = () => {
             <Button onClick={handleExtractImages} disabled={!pdfInfo || selectedPages.length === 0}>
               选中页面转为图片ZIP
             </Button>
+            {selectedPages.length === 1 && (
+              <>
+                <Button onClick={() => handleInsertBlankPage('before')}>
+                  在选中页前插入空白页
+                </Button>
+                <Button onClick={() => handleInsertBlankPage('after')}>在选中页后插入空白页</Button>
+              </>
+            )}
           </Space>
         </div>
       ),
@@ -270,11 +293,7 @@ const PdfToolPage: React.FC = () => {
             </Card>
           )}
 
-          <Button
-            type="primary"
-            onClick={handleMergeImages}
-            disabled={imageFiles.length === 0}
-          >
+          <Button type="primary" onClick={handleMergeImages} disabled={imageFiles.length === 0}>
             合并为PDF下载
           </Button>
         </div>
