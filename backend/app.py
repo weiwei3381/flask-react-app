@@ -123,6 +123,37 @@ def extract_images():
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+@app.route("/api/v1/pdf/merge-images", methods=["POST"])
+def merge_images():
+    """将上传的多张图片按顺序合并为一个PDF并返回下载"""
+    data = request.get_json()
+    filenames = data.get("filenames", [])  # 图片文件名列表，按上传顺序排列
+
+    if not filenames:
+        return jsonify({"message": "缺少图片文件列表"}), 400
+
+    # 构建图片的完整路径列表
+    image_paths = []
+    for fname in filenames:
+        full_path = os.path.join(app.config["UPLOAD_FOLDER"], fname)
+        if not os.path.isfile(full_path):
+            return jsonify({"message": f"文件不存在: {fname}"}), 400
+        image_paths.append(full_path)
+
+    # 生成随机输出PDF文件名
+    output_filename = os.urandom(8).hex() + ".pdf"
+    output_pdf = os.path.join(app.config["UPLOAD_FOLDER"], output_filename)
+
+    # 合并图片为PDF
+    pdf_utils.merge_image_files_to_pdf(image_paths, output_pdf)
+
+    return send_from_directory(
+        app.config["UPLOAD_FOLDER"],
+        output_filename,
+        as_attachment=True,
+    )
+
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     # 安全地从指定目录发送文件

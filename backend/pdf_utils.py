@@ -75,6 +75,34 @@ def merge_images_to_pdf(image_folder, output_pdf):
     print(f"✅ 图片合并完成，PDF已保存为: {output_pdf}")
 
 
+def merge_image_files_to_pdf(image_paths, output_pdf):
+    """
+    将指定路径列表中的图片按顺序合并为一个PDF（无边距铺满）
+    :param image_paths: 图片文件的完整路径列表，按顺序排列
+    :param output_pdf: 输出的PDF文件路径
+    """
+    if not image_paths:
+        print("图片路径列表为空！")
+        return
+
+    doc = fitz.open()
+    for img_path in image_paths:
+        if not os.path.isfile(img_path):
+            print(f"警告: 文件不存在，已跳过: {img_path}")
+            continue
+        # 从文件创建一个图片文档，转换为PDF页面并插入
+        img_doc = fitz.open(img_path)
+        pdf_bytes = img_doc.convert_to_pdf()
+        img_pdf = fitz.open("pdf", pdf_bytes)
+        doc.insert_pdf(img_pdf)
+        img_doc.close()
+        img_pdf.close()
+
+    doc.save(output_pdf)
+    doc.close()
+    print(f"✅ 图片合并完成，PDF已保存为: {output_pdf}")
+
+
 def merge_multiple_pdfs(pdf_list, output_pdf):
     """
     将多个PDF文件合并为一个

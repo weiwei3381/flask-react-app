@@ -1,105 +1,260 @@
 import React, { useState } from 'react'
-import { InboxOutlined } from '@ant-design/icons'
-import { Button, message, Upload } from 'antd'
+import {
+  InboxOutlined,
+  FilePdfOutlined,
+  FileImageOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons'
+import { Button, Card, message, Space, Tabs, Upload } from 'antd'
 import type { UploadProps } from 'antd'
 import 'react-pdf/dist/Page/TextLayer.css'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import PDFThumbnailSelector from '../../components/PDFThumbnailSelector'
 import { BASE_URL, fetchFile } from '../../../utils/network'
+import './PdfToolPage.css'
+
+const { Dragger } = Upload
 
 const PdfToolPage: React.FC = () => {
-  const [selectedPages, setSelectedPages] = useState<number[]>([]) // 存储被选中的页码数组
-  const [pdfFileUrl, setPdfFileUrl] = useState('')
-  const [filename, setFilename] = useState('')
+  // ==================== PDF操作相关状态 ====================
+  const [selectedPages, setSelectedPages] = useState<number[]>([])
+  const [pdfInfo, setPdfInfo] = useState<{ name: string; filename: string } | null>(null)
 
-  // 处理抽取文件按钮
+  // ==================== 图片转PDF相关状态 ====================
+  const [imageFiles, setImageFiles] = useState<
+    { uid: string; name: string; filename: string }[]
+  >([])
+
+  // ==================== PDF操作处理函数 ====================
+
+  // 处理抽取PDF页面
   const handleExtractPdf = async () => {
-    console.log(selectedPages)
-    message.info(`filename: ${filename}, selectedPages:${selectedPages}`)
+    if (!pdfInfo) return
     await fetchFile(
       '/api/v1/pdf/extract',
-      {
-        filename: filename,
-        pageNumbers: selectedPages,
-      },
+      { filename: pdfInfo.filename, pageNumbers: selectedPages },
       'extract.pdf'
     )
   }
 
-  // 处理转换为图片并下载ZIP按钮
+  // 处理PDF页面转为图片ZIP下载
   const handleExtractImages = async () => {
-    console.log(selectedPages)
-    message.info(`filename: ${filename}, selectedPages:${selectedPages}`)
-    // 调用后端接口，将选中页面转为PNG图片并打包为ZIP下载
+    if (!pdfInfo) return
     await fetchFile(
       '/api/v1/pdf/extract-images',
-      {
-        filename: filename,
-        pageNumbers: selectedPages,
-      },
+      { filename: pdfInfo.filename, pageNumbers: selectedPages },
       'images.zip'
     )
   }
 
-  const { Dragger } = Upload
+  // ==================== 图片转PDF处理函数 ====================
 
-  const props: UploadProps = {
+  // 处理图片合并为PDF
+  const handleMergeImages = async () => {
+    if (imageFiles.length === 0) {
+      message.warning('请先上传图片')
+      return
+    }
+    const filenames = imageFiles.map((f) => f.filename)
+    await fetchFile(
+      '/api/v1/pdf/merge-images',
+      { filenames },
+      'merged_images.pdf'
+    )
+  }
+
+  // 移除单张已上传的图片
+  const handleRemoveImage = (uid: string) => {
+    setImageFiles((prev) => prev.filter((f) => f.uid !== uid))
+  }
+
+  // ==================== PDF上传配置 ====================
+  const pdfUploadProps: UploadProps = {
     name: 'file',
     multiple: false,
     accept: '.pdf',
     action: BASE_URL + '/api/v1/upload',
-    // 开始上传前的钩子函数, 可以用来验证文件类型等
     beforeUpload: (file) => {
       const isPDF = file.type === 'application/pdf'
-      message.info(`file.type: ${file.type} `)
       if (!isPDF) {
-        message.error(`${file.name} is not a pdf file`)
+        message.error(`${file.name} 不是PDF文件`)
       }
       return isPDF || Upload.LIST_IGNORE
     },
-    // 上传栏变化的回调函数
     onChange(info) {
       const { file } = info
-      const { status } = file
-      if (status !== 'uploading') {
-        console.log(info.file, info.fileList)
-      }
-      if (status === 'done') {
-        message.success(`${info.file.name} file uploaded successfully.`)
+      if (file.status === 'done') {
+        message.success(`${file.name} 上传成功`)
         const response = file.response
         if (response?.data?.filename) {
-          setFilename(response?.data?.filename)
-          setPdfFileUrl(`${BASE_URL}/uploads/${response?.data?.filename}`)
-          message.info(response?.data?.filename, 10)
+          // 只保留最新上传的一个PDF，自动进行预览
+          setPdfInfo({
+            name: file.name,
+            filename: response.data.filename,
+          })
+          setSelectedPages([])
         }
-      } else if (status === 'error') {
-        message.error(`${info.file.name} file upload failed.`)
+      } else if (file.status === 'error') {
+        message.error(`${file.name} 上传失败`)
       }
-    },
-    onDrop(e) {
-      console.log('Dropped files', e.dataTransfer.files)
     },
   }
 
+  // ==================== 图片上传配置 ====================
+  const imageUploadProps: UploadProps = {
+    name: 'file',
+    multiple: true,
+    accept: 'image/*',
+    action: BASE_URL + '/api/v1/upload',
+    showUploadList: false, // 不使用组件自带列表，改为自定义预览
+    beforeUpload: (file) => {
+      const isImage = file.type.startsWith('image/')
+      if (!isImage) {
+        message.error(`${file.name} 不是图片文件`)
+      }
+      return isImage || Upload.LIST_IGNORE
+    },
+    onChange(info) {
+      const { fileList: currentFileList } = info
+      // 从当前文件列表中提取已上传成功的文件信息
+      const doneFiles = currentFileList
+        .filter((f) => f.status === 'done' && f.response?.data?.filename)
+        .map((f) => ({
+          uid: f.uid,
+          name: f.name,
+          filename: f.response.data.filename,
+        }))
+      // 按上传顺序保持排列
+      setImageFiles(doneFiles)
+    },
+  }
+
+  // ==================== Tab配置 ====================
+  const tabItems = [
+    {
+      key: 'pdf',
+      label: (
+        <span>
+          <FilePdfOutlined /> PDF页面抽取
+        </span>
+      ),
+      children: (
+        <div className="pdf-tool-section">
+          <Card title="上传PDF文件" size="small" style={{ marginBottom: 16 }}>
+            <Dragger {...pdfUploadProps}>
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">点击或拖动PDF文件到此区域上传</p>
+              <p className="ant-upload-hint">仅支持单个PDF文件，新上传会替换旧文件</p>
+            </Dragger>
+          </Card>
+
+          {/* 显示当前PDF文件名 */}
+          {pdfInfo && (
+            <Card size="small" style={{ marginBottom: 16 }}>
+              <div className="pdf-current-file">
+                <FilePdfOutlined className="pdf-file-icon" />
+                <span className="pdf-file-name" title={pdfInfo.name}>
+                  当前文件：{pdfInfo.name}
+                </span>
+              </div>
+            </Card>
+          )}
+
+          {/* 预览当前PDF的缩略图 */}
+          {pdfInfo && (
+            <Card title="选择要操作的页面（点击选中/取消）" size="small" style={{ marginBottom: 16 }}>
+              <PDFThumbnailSelector
+                selectPagesCallback={setSelectedPages}
+                pdfUrl={`${BASE_URL}/uploads/${pdfInfo.filename}`}
+              />
+            </Card>
+          )}
+
+          <Space>
+            <Button
+              type="primary"
+              onClick={handleExtractPdf}
+              disabled={!pdfInfo || selectedPages.length === 0}
+            >
+              抽取选中页面为PDF
+            </Button>
+            <Button onClick={handleExtractImages} disabled={!pdfInfo || selectedPages.length === 0}>
+              选中页面转为图片ZIP
+            </Button>
+          </Space>
+        </div>
+      ),
+    },
+    {
+      key: 'image',
+      label: (
+        <span>
+          <FileImageOutlined /> 图片合并为PDF
+        </span>
+      ),
+      children: (
+        <div className="image-tool-section">
+          <Card title="上传图片（支持多选）" size="small" style={{ marginBottom: 16 }}>
+            <Dragger {...imageUploadProps}>
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">点击或拖动图片文件到此区域上传</p>
+              <p className="ant-upload-hint">支持JPG、PNG等常见图片格式，可批量上传</p>
+            </Dragger>
+          </Card>
+
+          {/* 图片预览区 */}
+          {imageFiles.length > 0 && (
+            <Card
+              title={`已上传 ${imageFiles.length} 张图片（按上传顺序排列）`}
+              size="small"
+              style={{ marginBottom: 16 }}
+            >
+              <div className="image-preview-grid">
+                {imageFiles.map((file, index) => (
+                  <div key={file.uid} className="image-preview-item">
+                    <div className="image-preview-index">{index + 1}</div>
+                    <img
+                      src={`${BASE_URL}/uploads/${file.filename}`}
+                      alt={file.name}
+                      className="image-preview-img"
+                    />
+                    <div className="image-preview-name" title={file.name}>
+                      {file.name}
+                    </div>
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      className="image-preview-remove"
+                      onClick={() => handleRemoveImage(file.uid)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          <Button
+            type="primary"
+            onClick={handleMergeImages}
+            disabled={imageFiles.length === 0}
+          >
+            合并为PDF下载
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
-    <div style={{ padding: '50px' }}>
+    <div className="pdf-tool-page">
       <h2>PDF工具</h2>
-      <Dragger {...props}>
-        <p className="ant-upload-drag-icon">
-          <InboxOutlined />
-        </p>
-        <p className="ant-upload-text">点击或拖动文件到此区域进行上传</p>
-        <p className="ant-upload-hint">支持单个或批量上传。请确保上传的文件格式正确。</p>
-      </Dragger>
-      <PDFThumbnailSelector selectPagesCallback={setSelectedPages} pdfUrl={pdfFileUrl} />
-      <br />
-      <Button onClick={handleExtractPdf} disabled={selectedPages.length === 0}>
-        抽取页面
-      </Button>
-      {/* 将选中页面转换为PNG图片并打包为ZIP压缩包下载 */}
-      <Button onClick={handleExtractImages} disabled={selectedPages.length === 0} style={{ marginLeft: '8px' }}>
-        转换为图片下载ZIP
-      </Button>
+      <Tabs defaultActiveKey="pdf" items={tabItems} />
     </div>
   )
 }
