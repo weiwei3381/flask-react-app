@@ -26,6 +26,21 @@ const PdfToolPage: React.FC = () => {
     )
   }
 
+  // 处理转换为图片并下载ZIP按钮
+  const handleExtractImages = async () => {
+    console.log(selectedPages)
+    message.info(`filename: ${filename}, selectedPages:${selectedPages}`)
+    // 调用后端接口，将选中页面转为PNG图片并打包为ZIP下载
+    await fetchFile(
+      '/api/v1/pdf/extract-images',
+      {
+        filename: filename,
+        pageNumbers: selectedPages,
+      },
+      'images.zip'
+    )
+  }
+
   const { Dragger } = Upload
 
   const props: UploadProps = {
@@ -80,6 +95,10 @@ const PdfToolPage: React.FC = () => {
       <br />
       <Button onClick={handleExtractPdf} disabled={selectedPages.length === 0}>
         抽取页面
+      </Button>
+      {/* 将选中页面转换为PNG图片并打包为ZIP压缩包下载 */}
+      <Button onClick={handleExtractImages} disabled={selectedPages.length === 0} style={{ marginLeft: '8px' }}>
+        转换为图片下载ZIP
       </Button>
     </div>
   )

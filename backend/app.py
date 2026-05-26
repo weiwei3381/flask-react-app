@@ -81,6 +81,48 @@ def extract_page():
         )
 
 
+@app.route("/api/v1/pdf/extract-images", methods=["POST"])
+def extract_images():
+    """将PDF指定页面转换为PNG图片，打包为ZIP压缩包并返回下载"""
+    import tempfile
+    import zipfile
+    import shutil
+
+    # 获取前端发送的 JSON 数据
+    data = request.get_json()
+    filename = data.get("filename", "")  # 上传后的随机文件名
+    page_numbers = data.get("pageNumbers", [])  # 选中的页码列表（1-indexed）
+
+    input_pdf = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    if not filename or not os.path.isfile(input_pdf):
+        return jsonify({"message": "文件不存在"}), 400
+
+    # 创建临时目录存放生成的图片
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # 将选中页面转换为300dpi高清PNG图片
+        pdf_utils.convert_pages_to_images(input_pdf, temp_dir, page_numbers)
+
+        # 打包为ZIP压缩包
+        zip_filename = os.urandom(8).hex() + ".zip"
+        zip_path = os.path.join(app.config["UPLOAD_FOLDER"], zip_filename)
+
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for img_file in sorted(os.listdir(temp_dir)):
+                img_path = os.path.join(temp_dir, img_file)
+                zf.write(img_path, img_file)  # 写入ZIP时只保留文件名，不包含路径
+
+        # 以附件形式返回ZIP文件供下载
+        return send_from_directory(
+            app.config["UPLOAD_FOLDER"],
+            zip_filename,
+            as_attachment=True,
+        )
+    finally:
+        # 清理临时目录
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     # 安全地从指定目录发送文件
