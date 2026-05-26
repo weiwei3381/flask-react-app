@@ -1,16 +1,16 @@
 /* 缩略图外层容器 */
 .thumbnail-container {
   display: grid;
-  /* 自动填充，每列最小宽度为 180px（包含缩略图和间距），最大占满剩余空间 */
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px; /* 缩略图之间的间距 */
+  gap: 16px;
   padding: 20px;
   max-height: 80vh;
-  overflow-y: auto; /* 内容过多时出现滚动条 */
+  overflow-y: auto;
 }
 
 /* 单个缩略图项 */
 .thumbnail-item {
+  position: relative;
   border: 2px solid transparent;
   cursor: pointer;
   text-align: center;
@@ -21,7 +21,117 @@
 
 /* 选中状态的样式 */
 .thumbnail-item.selected {
-  border-color: #1890ff; /* 蓝色边框 */
-  background-color: #e6f7ff; /* 浅蓝背景 */
+  border-color: #1890ff;
+  background-color: #e6f7ff;
   box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+/* 导出顺序角标 */
+.thumbnail-order-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  line-height: 22px;
+  text-align: center;
+  background: #1890ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 50%;
+}
+
+/* ==================== 选中页码标签栏 ==================== */
+.selection-tags-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #f0f5ff;
+  border-bottom: 1px solid #d6e4ff;
+  flex-wrap: wrap;
+}
+
+.selection-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  background: #1890ff;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 12px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.selection-label {
+  color: #888;
+  font-size: 13px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 28px;
+}
+
+.selection-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+/* 单个页码标签 */
+.selection-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #fff;
+  border: 1px solid #b3d8ff;
+  border-radius: 4px;
+  cursor: grab;
+  font-size: 13px;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.selection-tag:hover {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.selection-tag:active {
+  cursor: grabbing;
+}
+
+.selection-tag.dragging {
+  opacity: 0.4;
+  border-style: dashed;
+  border-color: #1890ff;
+}
+
+.tag-page {
+  font-weight: 500;
+  color: #333;
+}
+
+.tag-remove {
+  margin-left: 2px;
+  padding: 0 2px;
+  color: #999;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+
+.tag-remove:hover {
+  color: #ff4d4f;
+  background: #fff1f0;
 }

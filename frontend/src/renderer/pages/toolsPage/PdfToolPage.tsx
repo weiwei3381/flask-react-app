@@ -18,6 +18,7 @@ const { Dragger } = Upload
 const PdfToolPage: React.FC = () => {
   // ==================== PDF操作相关状态 ====================
   const [selectedPages, setSelectedPages] = useState<number[]>([])
+  const [numPages, setNumPages] = useState(0)
   const [pdfInfo, setPdfInfo] = useState<{ name: string; filename: string } | null>(null)
 
   // ==================== 图片转PDF相关状态 ====================
@@ -61,6 +62,18 @@ const PdfToolPage: React.FC = () => {
       },
       `blank_insert_${position}_p${pageNumber}.pdf`
     )
+  }
+
+  // 全选所有页面
+  const handleSelectAll = () => {
+    if (numPages > 0) {
+      setSelectedPages(Array.from({ length: numPages }, (_, i) => i + 1))
+    }
+  }
+
+  // 取消全选
+  const handleDeselectAll = () => {
+    setSelectedPages([])
   }
 
   // ==================== 图片转PDF处理函数 ====================
@@ -203,9 +216,21 @@ const PdfToolPage: React.FC = () => {
               title="选择要操作的页面（点击选中/取消）"
               size="small"
               style={{ marginBottom: 16 }}
+              extra={
+                <Space size="small">
+                  <Button size="small" onClick={handleSelectAll}>
+                    全选
+                  </Button>
+                  <Button size="small" onClick={handleDeselectAll}>
+                    取消全选
+                  </Button>
+                </Space>
+              }
             >
               <PDFThumbnailSelector
-                selectPagesCallback={setSelectedPages}
+                selectedPages={selectedPages}
+                onSelectionChange={setSelectedPages}
+                onNumPagesChange={setNumPages}
                 pdfUrl={`${BASE_URL}/uploads/${pdfInfo.filename}`}
               />
             </Card>
