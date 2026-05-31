@@ -5,29 +5,55 @@ import LocalStorageManager from '../../../utils/localStorage'
 import * as echarts from 'echarts'
 
 const WelcomePage: React.FC = () => {
-  const echarts_test_ref = useRef(null)
+  const echartsRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    console.log(echarts_test_ref.current)
+    if (!echartsRef.current) return
 
-    // 绘制图表
-    const myChart = echarts.init(echarts_test_ref.current as HTMLDivElement)
-    myChart.setOption({
+    const dailyCounts = LocalStorageManager.getSearchDailyCounts(10)
+    const dates = dailyCounts.map((d) => d.date.slice(5)) // MM-DD 格式
+    const counts = dailyCounts.map((d) => d.count)
+
+    const chart = echarts.init(echartsRef.current)
+    chart.setOption({
       title: {
-        text: 'ECharts 入门示例',
+        text: '最近10天搜索次数',
+        left: 'center',
       },
-      tooltip: {},
+      tooltip: {
+        trigger: 'axis',
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true,
+      },
       xAxis: {
-        data: ['衬衫', '羊毛衫', '雪纺衫', '裤子', '高跟鞋', '袜子'],
+        type: 'category',
+        data: dates,
       },
-      yAxis: {},
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+      },
       series: [
         {
-          name: '销量',
+          name: '搜索次数',
           type: 'bar',
-          data: [5, 20, 36, 10, 10, 20],
+          data: counts,
+          itemStyle: {
+            color: '#4263eb',
+          },
         },
       ],
     })
+
+    const handleResize = () => chart.resize()
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      chart.dispose()
+    }
   }, [])
 
   return (
@@ -80,7 +106,7 @@ const WelcomePage: React.FC = () => {
         </Col>
         <Col span={12}>
           <Card style={{ height: '55vh' }}>
-            <div ref={echarts_test_ref} style={{ height: '55vh' }}></div>
+            <div ref={echartsRef} style={{ height: '55vh' }}></div>
           </Card>
         </Col>
         <Col span={12}>

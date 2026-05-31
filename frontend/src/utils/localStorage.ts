@@ -142,10 +142,45 @@ class LocalStorageManager {
 
   /**
    * 增加搜索次数，每次调用时会将 welcomePage 命名空间下的 searchCount 键的值加 1
+   * 同时记录当天的搜索次数
    */
   static addSearchCount() {
     const currentCount = this.getNameSpaceItem('welcomePage', 'searchCount', 0)
     this.setNameSpaceItem('welcomePage', 'searchCount', currentCount + 1)
+
+    const today = new Date().toISOString().split('T')[0]
+    const dailyCounts =
+      this.getNameSpaceItem<Record<string, number>>(
+        'welcomePage',
+        'searchDateAndCount',
+        {}
+      )
+    dailyCounts[today] = (dailyCounts[today] || 0) + 1
+    this.setNameSpaceItem('welcomePage', 'searchDateAndCount', dailyCounts)
+  }
+
+  /**
+   * 获取最近 N 天的每日搜索次数
+   * @param days 要获取的天数，默认 10 天
+   * @returns 包含日期和对应搜索次数的数组，按日期升序排列
+   */
+  static getSearchDailyCounts(
+    days: number = 10
+  ): { date: string; count: number }[] {
+    const dailyCounts =
+      this.getNameSpaceItem<Record<string, number>>(
+        'welcomePage',
+        'searchDateAndCount',
+        {}
+      ) || {}
+    const result: { date: string; count: number }[] = []
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      result.push({ date: dateStr, count: dailyCounts[dateStr] || 0 })
+    }
+    return result
   }
 
   // 增加查看详情的id，每次调用时会将对应命名空间下的 viewDetailIds 键的值增加一个新的 id
