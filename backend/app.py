@@ -1,10 +1,11 @@
 import os
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
-import utils, pdf_utils
+import utils, pdf_utils, auth
 from flask_cors import CORS
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 # 允许跨域访问
 CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173','http://localhost:8080', 'http://127.0.0.1:8080'])
 
@@ -15,12 +16,16 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 print(f"上传文件夹路径: {app.config['UPLOAD_FOLDER']}")
 
+# 注册认证路由
+auth.register_auth_routes(app)
+
 @app.route('/')
 def index():
     return "后端服务正在运行..."
 
 
 @app.route("/api/v1/upload", methods=["POST"])
+@auth.login_required
 def upload_file():
     if "file" not in request.files:
         return jsonify({"message": "缺少文件部分"}), 400
@@ -51,6 +56,7 @@ def upload_file():
 
 
 @app.route("/api/v1/download", methods=["GET"])
+@auth.login_required
 def download_file():
     # 这里假设下载刚才上传并重命名的文件
     # 实际业务中，你可以通过 request.args.get('filename') 动态获取要下载的文件名
@@ -64,6 +70,7 @@ def download_file():
 
 
 @app.route("/api/v1/pdf/extract", methods=["POST"])
+@auth.login_required
 def extract_page():
     # 获取前端发送的 JSON 数据
     data = request.get_json()
@@ -82,6 +89,7 @@ def extract_page():
 
 
 @app.route("/api/v1/pdf/extract-images", methods=["POST"])
+@auth.login_required
 def extract_images():
     """将PDF指定页面转换为PNG图片，打包为ZIP压缩包并返回下载"""
     import tempfile
@@ -124,6 +132,7 @@ def extract_images():
 
 
 @app.route("/api/v1/pdf/merge-images", methods=["POST"])
+@auth.login_required
 def merge_images():
     """将上传的多张图片按顺序合并为一个PDF并返回下载"""
     data = request.get_json()
@@ -155,6 +164,7 @@ def merge_images():
 
 
 @app.route("/api/v1/pdf/insert-blank", methods=["POST"])
+@auth.login_required
 def insert_blank():
     """在PDF指定页面的前面或后面插入空白页，返回新PDF文件名"""
     data = request.get_json()
@@ -194,6 +204,7 @@ def uploaded_file(filename):
 
 
 @app.route('/api/v1/greet', methods=['POST'])
+@auth.login_required
 def greet():
     # 获取前端发送的 JSON 数据
     data = request.get_json()
@@ -205,6 +216,7 @@ def greet():
     return jsonify({'message': message})
 
 @app.route('/api/v1/document/query', methods=['POST'])
+@auth.login_required
 def query_in_document():
     """进行文档检索
 
@@ -238,6 +250,7 @@ def query_in_document():
 
 
 @app.route("/api/v1/paragraph/all", methods=["POST"])
+@auth.login_required
 def get_all_paras_by_documentId():
     """根据文档ID查询对应的段落全文
     
@@ -253,6 +266,7 @@ def get_all_paras_by_documentId():
 
 
 @app.route("/api/v1/paragraph/one", methods=["POST"])
+@auth.login_required
 def get_one_para_by_documentId():
     """根据文档ID获得一段
 
@@ -268,6 +282,7 @@ def get_one_para_by_documentId():
 
 
 @app.route("/api/v1/document/id", methods=["POST"])
+@auth.login_required
 def get_document_by_id():
     """根据文档ID获得文档内容
 
@@ -283,6 +298,7 @@ def get_document_by_id():
 
 
 @app.route("/api/v1/structure/query", methods=["POST"])
+@auth.login_required
 def query_in_structure():
     """进行结构检索，主要是标题和观点
 
@@ -317,6 +333,7 @@ def query_in_structure():
 
 
 @app.route("/api/v1/paragraph/ids", methods=["POST"])
+@auth.login_required
 def get_paragraphs_by_ids():
     """进行结构检索，主要是标题和观点
 
@@ -338,6 +355,7 @@ def get_paragraphs_by_ids():
 
 
 @app.route("/api/v1/paragraph/inline", methods=["POST"])
+@auth.login_required
 def filter_inline_paras_by_ids():
     """进行结构检索，主要是标题和观点
 
@@ -358,6 +376,7 @@ def filter_inline_paras_by_ids():
 
 
 @app.route("/api/v1/paragraph/id", methods=["POST"])
+@auth.login_required
 def get_paragraph_by_id():
     """根据段落ID获得段落内容
 
@@ -373,6 +392,7 @@ def get_paragraph_by_id():
 
 
 @app.route("/api/v1/paragraph/query", methods=["POST"])
+@auth.login_required
 def get_some_paras():
     """根据段落ID和上下限获得一段范围内的段落内容
 
@@ -391,6 +411,7 @@ def get_some_paras():
 
 
 @app.route("/api/v1/paragraph/fulltext", methods=["POST"])
+@auth.login_required
 def search_full_text():
     """段落进行全文检索
 
@@ -409,6 +430,7 @@ def search_full_text():
 
 
 @app.route("/api/v1/outline/query", methods=["POST"])
+@auth.login_required
 def get_outline_by_documentId():
     """根据文档ID获得文档内容大纲，如果没有搜索到则data中内容为null
     Args:
@@ -424,4 +446,4 @@ def get_outline_by_documentId():
 
 if __name__ == '__main__':
     # 开启 debug 模式，端口设为 5000
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
