@@ -122,6 +122,7 @@ const PdfToolPage: React.FC = () => {
     multiple: false,
     accept: '.pdf',
     action: BASE_URL + '/api/v1/upload',
+    headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}` },
     beforeUpload: (file) => {
       const isPDF = file.type === 'application/pdf'
       if (!isPDF) {
@@ -154,6 +155,7 @@ const PdfToolPage: React.FC = () => {
     multiple: true,
     accept: 'image/*',
     action: BASE_URL + '/api/v1/upload',
+    headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') || ''}` },
     showUploadList: false, // 不使用组件自带列表，改为自定义预览
     beforeUpload: (file) => {
       const isImage = file.type.startsWith('image/')

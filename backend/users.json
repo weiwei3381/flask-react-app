@@ -1,6 +1,6 @@
 {
   "admin": {
     "password": "scrypt:32768:8:1$DHPLUnTxKL2BCX98$ac215c28001fe89d1def7a3fb01c76babff2a5f6485218fa78de7cd3b65c43bb6b89c46b44ecfe44f62e3af129846668713945264e1ec51fd738dfa3e4b8844a",
-    "token": null
+    "token": "1e84cac030b64ad49e1b108c8a3b264b"
   }
 }

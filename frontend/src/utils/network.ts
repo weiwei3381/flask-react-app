@@ -6,12 +6,17 @@ export const BASE_URL = 'http://127.0.0.1:5000' // 后端API的基础URL
 export const fetchUrl = async (url, payload, method = 'POST') => {
   let res: ResponseData = null
   try {
+    const token = localStorage.getItem('auth_token')
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
     // 发送 POST 请求到 Flask 后端
     const response = await fetch(BASE_URL + url, {
       method: method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
       body: JSON.stringify(payload),
     })
 
@@ -32,11 +37,16 @@ export const fetchUrl = async (url, payload, method = 'POST') => {
  */
 export const fetchFile = async (url: string, payload, outputFile = 'file.pdf', method = 'POST') => {
   try {
+    const token = localStorage.getItem('auth_token')
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
     const response = await fetch(BASE_URL + url, {
       method: method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
       body: JSON.stringify(payload),
     })
 

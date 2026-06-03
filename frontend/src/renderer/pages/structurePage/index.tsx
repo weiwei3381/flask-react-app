@@ -245,6 +245,7 @@ const StructurePage: React.FC = () => {
           align="middle"
           style={{
             background: '#f0f2f5',
+            padding: '10px 0px',
           }}
         >
           <Col span={11}>
@@ -347,9 +348,7 @@ const StructurePage: React.FC = () => {
         }}
       />
       <Spin
-        description={`正在检索${
-          searchValue === '' ? '...' : '【' + searchValue + '】'
-        }`}
+        description={`正在检索${searchValue === '' ? '...' : '【' + searchValue + '】'}`}
         spinning={tableLoading}
       >
         <Table

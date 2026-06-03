@@ -57,17 +57,13 @@ const WelcomePage: React.FC = () => {
   }, [])
 
   return (
-    <div style={{ marginTop: '64px' }}>
-      <Row gutter={[24, 48]}>
+    <div style={{ marginTop: '12px' }}>
+      <Row gutter={[20, 40]}>
         <Col span={8}>
           <Card>
             <Statistic
               valueStyle={{ color: '#f03e3e' }}
-              value={LocalStorageManager.getNameSpaceItem(
-                'welcomePage',
-                'documentTotal',
-                0
-              )}
+              value={LocalStorageManager.getNameSpaceItem('welcomePage', 'documentTotal', 0)}
               title="文档总数"
               suffix="个"
             />
@@ -78,11 +74,7 @@ const WelcomePage: React.FC = () => {
             <Statistic
               valueStyle={{ color: '#4263eb' }}
               value={
-                LocalStorageManager.getNameSpaceItem(
-                  'welcomePage',
-                  'structureTotal',
-                  0
-                ) / 10000
+                LocalStorageManager.getNameSpaceItem('welcomePage', 'structureTotal', 0) / 10000
               }
               title="标题观点数"
               precision={2}
@@ -94,23 +86,19 @@ const WelcomePage: React.FC = () => {
           <Card>
             <Statistic
               valueStyle={{ color: '#37b24d' }}
-              value={LocalStorageManager.getNameSpaceItem(
-                'welcomePage',
-                'searchCount',
-                0
-              )}
+              value={LocalStorageManager.getNameSpaceItem('welcomePage', 'searchCount', 0)}
               title="搜索次数"
               suffix="次"
             />
           </Card>
         </Col>
         <Col span={12}>
-          <Card style={{ height: '55vh' }}>
-            <div ref={echartsRef} style={{ height: '55vh' }}></div>
+          <Card style={{ height: '60vh' }}>
+            <div ref={echartsRef} style={{ height: '60vh' }}></div>
           </Card>
         </Col>
         <Col span={12}>
-          <Card style={{ height: '55vh' }} id="wordCloudCard">
+          <Card style={{ height: '60vh' }} id="wordCloudCard">
             <Empty style={{ paddingTop: '10vh' }} />
           </Card>
         </Col>

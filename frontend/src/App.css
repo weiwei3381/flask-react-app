@@ -17,6 +17,9 @@
   }
 }
 
+div.ant-tabs-nav {
+    margin: 0px 0px 4px 0px !important;
+}
 .hero {
   position: relative;
 
@@ -200,4 +203,8 @@
     font-size: 20px;
     font-weight: bold;
     line-height: 32px;
+}
+
+button.logout-button:hover {
+    color: white !important
 }

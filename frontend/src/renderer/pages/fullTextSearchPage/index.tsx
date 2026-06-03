@@ -10,7 +10,6 @@ import {
   Table,
   Spin,
   message,
-  Rate,
   Affix,
   Switch,
   Row,
@@ -23,18 +22,14 @@ import {
   Badge,
 } from 'antd'
 import { AliwangwangOutlined } from '@ant-design/icons'
-import './index.css'
 import ColorDiv from '../../components/ColorDiv'
 import SentenceHighlight from '../../components/SentenceHighlight'
 import SearchHistory from '../../components/SearchHistory'
 import DetailModal from '../../components/DetailModal'
 import { backToTop, convertDocTitle, dateToStr, unique } from '../../../utils'
-import {
-  filterInLineResult,
-  getParagraphsByIds,
-  searchFullText,
-} from '../../../utils/network'
+import { filterInLineResult, getParagraphsByIds, searchFullText } from '../../../utils/network'
 import LocalStorageManager from '../../../utils/localStorage'
+import './index.css'
 
 const FullTextSearch: React.FC = () => {
   // 用户搜索词有两种状态，一种是刚输入进去，但是还没有进行提交搜索的文本，也就是输入框中的词，这种状态为“inputValue”
@@ -220,11 +215,7 @@ const FullTextSearch: React.FC = () => {
       pageNo: current,
       pageSize: pageSize,
     })
-    const paraResults = await getParagraphsByIds(
-      searchResult.resultParaIdList,
-      current,
-      pageSize
-    )
+    const paraResults = await getParagraphsByIds(searchResult.resultParaIdList, current, pageSize)
     setSearchResultData(paraResults)
   }
 
@@ -274,7 +265,7 @@ const FullTextSearch: React.FC = () => {
   return (
     <div className="full-search">
       <Spin tip={loadingTip} spinning={tableLoading}>
-        <Affix offsetTop={36}>
+        <Affix offsetTop={0}>
           <Row
             justify="center"
             align="middle"

@@ -3,6 +3,7 @@ import {
   FilePdfOutlined,
   FileSearchOutlined,
   HomeOutlined,
+  LogoutOutlined,
   MonitorOutlined,
   OrderedListOutlined,
   QrcodeOutlined,
@@ -10,8 +11,7 @@ import {
   ToolOutlined,
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
-import { Layout, Menu, Tabs, theme } from 'antd'
-import './App.css'
+import { Button, Layout, Menu, Tabs, theme } from 'antd'
 import DocumentsPage from './renderer/pages/documentPage'
 import StructurePage from './renderer/pages/structurePage'
 import WelcomePage from './renderer/pages/welcomePage/WelcomePage'
@@ -19,6 +19,8 @@ import PandaSvg from './renderer/components/PandaSvg'
 import FullTextSearch from './renderer/pages/fullTextSearchPage'
 import QRToolPage from './renderer/pages/toolsPage/QRToolPage'
 import PdfToolPage from './renderer/pages/toolsPage/PdfToolPage'
+import { useAuth } from './renderer/auth/auth'
+import './App.css'
 
 const { Content, Footer, Sider } = Layout
 
@@ -77,6 +79,7 @@ const App: React.FC = () => {
   const [activeKey, setActiveKey] = useState('1') // 当前激活的标签页key
   const [tabsItems, setTabsItems] = useState(initialItems) // 标签页的内容
   const [collapsed, setCollapsed] = useState(false)
+  const { username, logout } = useAuth()
   const {
     token: { borderRadiusLG },
   } = theme.useToken()
@@ -197,20 +200,51 @@ const App: React.FC = () => {
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}
       >
-        <div className="demo-logo-vertical">
-          {collapsed ? <PandaSvg /> : '多粒度检索系统'}
-        </div>
-        <Menu
-          theme="dark"
-          defaultSelectedKeys={['欢迎']}
-          mode="inline"
-          items={items}
-          onSelect={(info) => {
-            setSelectedMenuKey(info.key)
-            console.log(info)
-            addTabByClickMenu(info.key)
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
           }}
-        />
+        >
+          <div className="demo-logo-vertical">{collapsed ? <PandaSvg /> : '多粒度检索系统'}</div>
+          <Menu
+            theme="dark"
+            defaultSelectedKeys={['欢迎']}
+            mode="inline"
+            items={items}
+            onSelect={(info) => {
+              setSelectedMenuKey(info.key)
+              console.log(info)
+              addTabByClickMenu(info.key)
+            }}
+            style={{ flex: 1 }}
+          />
+          <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            {!collapsed && (
+              <div
+                style={{
+                  color: 'rgba(255,255,255,0.65)',
+                  fontSize: 12,
+                  marginBottom: 8,
+                  textAlign: 'center',
+                }}
+              >
+                {username}
+              </div>
+            )}
+            <Button
+              className="logout-button"
+              type="text"
+              icon={<LogoutOutlined />}
+              onClick={logout}
+              block
+              style={{ color: 'rgba(255,255,255,0.65)' }}
+            >
+              {!collapsed && '退出登录'}
+            </Button>
+          </div>
+        </div>
       </Sider>
 
       <Layout>
